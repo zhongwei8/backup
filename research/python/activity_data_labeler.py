@@ -81,6 +81,7 @@ def label_sensor_data_file(file_path: Path, result_file: Path = None, label_item
     ...
     """
     global all_files_labels
+    print(f'\nProcessing file: {file_path}')
     df = pd.read_csv(file_path, index_col=False, comment='#')
     ts = df['EventTimestamp(ns)'].values
     utc_ts = df['CurrentTimeMillis'].values
@@ -92,6 +93,7 @@ def label_sensor_data_file(file_path: Path, result_file: Path = None, label_item
 
     file_name_prefix = '-'.join(file_name.split('-')[:-2])
     label_file = file_path.parent / f'{file_name_prefix}-label-result.csv'
+    print(f'Label result file path: {label_file}')
     if label_file.exists():
         print('Warning: Label result file exists')
         # temp_win = Tk()
@@ -121,7 +123,7 @@ def label_sensor_data_file(file_path: Path, result_file: Path = None, label_item
                 f_result.write('\n')
 
 
-def process_dir(src_dir: Path, result_file: Path):
+def process_dir(src_dir: Path, result_file: Path = None):
     if src_dir.is_dir():
         print(f'\nProcessing directory: {src_dir}')
         for f in src_dir.glob('*accel-52HZ.csv'):
