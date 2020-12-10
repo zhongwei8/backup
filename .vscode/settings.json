@@ -1,0 +1,6 @@
+{
+    "files.autoSave": "afterDelay",
+    "python.envFile": "${workspaceRoot}/.env",
+    "files.trimTrailingWhitespace": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+}

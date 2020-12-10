@@ -39,7 +39,7 @@ class DataLabeler:
         self.data_len = 0
 
     def on_cancel(self):
-        print(f'Give up current label')
+        print('Give up current label')
         self.win.destroy()
 
     def on_submit(self, com, start, end):
@@ -50,7 +50,7 @@ class DataLabeler:
             self.labels.append([label_index, start, end])
         else:
             self.labels.append([label_str, start, end])
-        print(f'Labeling points: {start:7d} - {end:7d} as type: {label_index}:{label_str}')
+        print(f'Labeling points: {start:^7d} - {end:^7d} as type: {label_index}:{label_str}')
 
     def show_label_window(self, start, end):
         self.win = Tk()
@@ -86,7 +86,7 @@ class DataLabeler:
         if end_point > self.data_len:
             end_point = self.data_len - 1
         if end_point <= start_point:
-            print(f'Start point grater than end point, do nothing')
+            print('Start point grater than end point, do nothing')
             return
         self.show_label_window(start_point, end_point)
 
@@ -115,9 +115,10 @@ class DataLabeler:
         plt.locator_params(nbins=8)
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         plt.locator_params(axis='x', nbins=10)
-        plt.plot(mag)
+        plt.subplot(211)
+        plt.plot(mag, label='Acc magnitude')
         ax = plt.gca()
-        cursor = Cursor(ax, useblit=True, color='red', linewidth=2)
+        _ = Cursor(ax, useblit=True, color='red', linewidth=2)
 
         def format_func(x_tick, pos=None):
             this_index = np.clip(int(x_tick + 0.5), 0, data_len - 1).item()
@@ -125,6 +126,13 @@ class DataLabeler:
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(format_func))
         _ = widgets.SpanSelector(ax, self.onselect, 'horizontal', rectprops=dict(facecolor='blue', alpha=0.5))
         plt.grid()
+        plt.legend(loc='upper right')
+        plt.subplot(212)
+        plt.plot(acc.T[0], label='acc x')
+        plt.plot(acc.T[1], label='acc y')
+        plt.plot(acc.T[2], label='acc z')
+        plt.grid()
+        plt.legend(loc='upper right')
         plt.show()
         print(f'Label done, labeled segments num: {len(self.labels)}: {self.labels}')
         return self.labels
