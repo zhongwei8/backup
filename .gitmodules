@@ -1,0 +1,3 @@
+[submodule "miot-algo-common"]
+	path = miot-algo-common
+	url = git@git.n.xiaomi.com:miot-algorithm/miot-algo-common.git
