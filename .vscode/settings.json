@@ -1,6 +1,9 @@
 {
     "files.autoSave": "afterDelay",
-    "python.envFile": "${workspaceRoot}/.env",
+    "python.analysis.extraPaths": [
+        "research/python"
+    ],
     "files.trimTrailingWhitespace": true,
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "python.languageServer": "Pylance",
 }

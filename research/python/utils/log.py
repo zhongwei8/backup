@@ -3,6 +3,22 @@
 # @Author: farmer
 # @Date: 2020-04-14
 
+import logging
+
+
+DEFAULT_FORMAT = '%(asctime)s/%(name)s/%(levelname)s: %(message)s'
+
+
+def create_logger(name=None, level=logging.INFO, format_str=DEFAULT_FORMAT):
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    formatter = logging.Formatter(format_str)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
+
 
 class Log:
     FAIL = '\033[91m'
