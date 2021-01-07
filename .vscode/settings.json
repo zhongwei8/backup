@@ -1,7 +1,7 @@
 {
     "files.autoSave": "afterDelay",
     "python.analysis.extraPaths": [
-        "research/python"
+        "src/py"
     ],
     "files.trimTrailingWhitespace": true,
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
