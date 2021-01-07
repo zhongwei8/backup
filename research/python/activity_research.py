@@ -3,6 +3,7 @@
 # @Author: Farmer Li
 # @Date: 2020-12-15
 
+import logging
 from pathlib import Path
 
 import click
@@ -19,21 +20,27 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle
 from sklearn.preprocessing import normalize
-from sklearn import tree
+import torch
+from torch import nn
 
 from activity_data_labeler import LABEL_ITEMS
 from activity_data_labeler import LABEL_ITEMS_INDEX_DICT
 from activity_data_labeler import LABEL_DAILY
 from activity_data_labeler import LABEL_OTHER_SPORTS
 from activity_data_research import load_sensor_data_and_labels_by_name
-from activity_data_research import load_and_split_data
+from utils import log
 from utils import plotting
 from utils.plotting import pretty_plot_confusion_matrix
+from utils.trainer import data_normalize
+from utils.trainer import normalize_data
+from utils.trainer import training
+
+logger = log.create_logger('ActivityResearch', level=logging.DEBUG)
 
 
 # Other type from type name to int label
 LABEL_OTHER = LABEL_DAILY + LABEL_OTHER_SPORTS
-LABEL_BRISKING = ['BriskWalkInDoor', 'BriskWalkOutSide']
+LABEL_BRISKING = ['BriskWalkInDoor', 'BriskWalkOutSide', 'SlowWalk']
 LABEL_RUNNING = ['RuningInDoor', 'RuningOutSide']
 LABEL_BIKING = ['BikingOutSide']
 LABEL_ROWING = ['RowingMachine']
@@ -48,19 +55,19 @@ LABEL_ACTIVITY_TYPE_MAP = []
 for label in LABEL_ACTIVITY_NAME_MAP:
     LABEL_ACTIVITY_TYPE_MAP.append([LABEL_ITEMS_INDEX_DICT.get(name) for name in label])
 
-ACTIVITY_TYPE_NAME = ['Other', 'BriskWalking', 'Running', 'Biking', 'RowingMachine', 'EllipticalMachine']
+ACTIVITY_TYPE_NAME = ['Other', 'Walking', 'Running', 'Biking', 'RowingMachine', 'EllipticalMachine']
 ACTIVITY_TYPE = [i for i in range(len(ACTIVITY_TYPE_NAME))]
 ACTIVITY_TYPE_WEIGHT = {
     0: 1,
-    1: 5,
-    2: 5,
-    3: 5,
-    4: 15,
-    5: 5
+    1: 1,
+    2: 1,
+    3: 1,
+    4: 3,
+    5: 1
 }
 ACTIVITY_TYPE_NAME_COLORS = {
     'Other': 'r',
-    'BriskWalking': 'g',
+    'Walking': 'g',
     'Running': 'b',
     'Biking': 'r',
     'RowingMachine': 'g',
@@ -72,44 +79,18 @@ DATA_Y_FILE = Path('../data/activity_data_y_raw.npy')
 FEAT_X_FILE = Path('../data/activity_data_x_feat.npy')
 FEAT_Y_FILE = Path('../data/activity_data_y_feat.npy')
 
-MODEL_PATH = Path('./models/model-alpha.dt.mdl')
+DATA_X_FILE_TRAIN = Path('../data/activity_data_x_raw_train.npy')
+DATA_Y_FILE_TRAIN = Path('../data/activity_data_y_raw_train.npy')
+FEAT_X_FILE_TRAIN = Path('../data/activity_data_x_feat_train.npy')
+FEAT_Y_FILE_TRAIN = Path('../data/activity_data_y_feat_train.npy')
 
+DATA_X_FILE_TEST = Path('../data/activity_data_x_raw_test.npy')
+DATA_Y_FILE_TEST = Path('../data/activity_data_y_raw_test.npy')
+FEAT_X_FILE_TEST = Path('../data/activity_data_x_feat_test.npy')
+FEAT_Y_FILE_TEST = Path('../data/activity_data_y_feat_test.npy')
 
-def data_normalize(x, method='z-score'):
-    """
-    Data normalize along each channel
-    """
-    print(f'Norm type: {method}')
-    data = x
-    norm = []
-    if method == 'z-score':
-        # shape should be (batch num * seq_len * channel num)
-        old_shape = data.shape
-        # Reshape to (-1, channel num)
-        data = data.reshape((-1, old_shape[-1]))
-        # zero-score
-        bias = np.mean(data, axis=0)
-        scale = 1 / np.std(data, axis=0)
-        data = (data - bias) * scale
-        norm.append(bias)
-        norm.append(scale)
-        # reshape back
-        data = data.reshape(old_shape)
-    else:
-        raise ValueError(f'Unsupported normalize method: {method}')
-    norm = np.asarray(norm)
-    print(f'Calculated norm parameter: \n{norm}')
-    return data, norm
-
-
-def normalize_data(data, norm, method='z-score'):
-    print('Apply normalize')
-    print(f'norm shape: {norm.shape}')
-    print(f'norm: {norm}')
-    if method == 'z-score':
-        data = (data - norm[0]) * norm[1]
-
-    return data
+MODEL_PATH = Path('./models/model-alpha.lr.mdl')
+CNN_MODEL_PATH = Path('./models/model-alpha.cnn.mdl')
 
 
 def evaluate(model, x, y, k_fold):
@@ -155,21 +136,13 @@ def svm(x, y, k_fold):
     print(f'SVM cv score: (min, mean, max) = {result}')
 
 
-def load_data(feat_file, label_file):
-    x = np.load(feat_file)
-    y = np.load(label_file)
-    y = np.repeat(y, x.shape[1], axis=0)
-    x = x.reshape((-1, x.shape[-1]))
-    return x, y
-
-
 def try_the_best(train_x, train_y, test_x, test_y, record_dir=None):
     train_x, cv_x, train_y, cv_y = train_test_split(train_x,
                                                     train_y,
                                                     test_size=0.3,
                                                     random_state=42)
     # model = KNeighborsClassifier(n_neighbors=10)
-    model = DecisionTreeClassifier(max_depth=8, max_features='auto', class_weight=ACTIVITY_TYPE_WEIGHT)
+    model = DecisionTreeClassifier(max_depth=10, max_features='auto', class_weight=ACTIVITY_TYPE_WEIGHT)
     # model = LogisticRegression()
     # model = SVC()
     for i in ACTIVITY_TYPE:
@@ -219,10 +192,13 @@ def feature_extract(data_x):
     feats = []
     for x in data_x:
         feat = []
+        lp = x[:, 3:]
+        x = x[:, :3]
         mean = x.mean(axis=0)
         feat.append(x.min(axis=0))
         feat.append(x.max(axis=0))
         feat.append(mean)
+        feat.append(lp.mean(axis=0))
         feat.append(x.std(axis=0))
         feat.append(x.sum(axis=0, where=x > 0))
         feat.append(-x.sum(axis=0, where=x < 0))
@@ -257,61 +233,93 @@ def transform_labels(data_x, data_y):
 
 
 def custom_normalize(data_x):
-    return normalize(data_x, axis=1)
+    data = normalize(data_x, axis=1)
+    # data, norm = data_normalize(data_x)
+    return data
 
 
-def train(record_dir=None, force=False):
-    if force or not FEAT_X_FILE.exists() or not FEAT_Y_FILE.exists():
-        data_x = np.load(DATA_X_FILE)
-        data_y = np.load(DATA_Y_FILE)
-        print(f'raw data x shape: {data_x.shape}')
-        print(f'raw data y shape: {data_y.shape}')
-        data_x, data_y = transform_labels(data_x, data_y)
+def load_raw_data_and_extract_feature(x_file, y_file, x_feat_file, y_feat_file):
+    print(f'\nProcessing x_file: {x_file}')
+    print(f'Processing y_file: {y_file}')
+    data_x = np.load(x_file)
+    data_y = np.load(y_file)
+    print(f'raw data x shape: {data_x.shape}')
+    print(f'raw data y shape: {data_y.shape}')
+    data_x, data_y = transform_labels(data_x, data_y)
 
-        # Feature extraction
-        data_x = feature_extract(data_x)
-        data_x = custom_normalize(data_x)
-        print(f'data x shape: {data_x.shape}')
-        print(f'data y shape: {data_y.shape}')
-        np.save(FEAT_X_FILE, data_x)
-        np.save(FEAT_Y_FILE, data_y)
+    # Feature extraction
+    data_x = feature_extract(data_x)
+    data_x = custom_normalize(data_x)
+    print(f'data x shape: {data_x.shape}')
+    print(f'data y shape: {data_y.shape}')
+    np.save(x_feat_file, data_x)
+    np.save(y_feat_file, data_y)
+
+    return data_x, data_y
+
+
+def load_train_test_data(force=False):
+    if not force and FEAT_X_FILE_TRAIN.exists():
+        train_x = np.load(FEAT_X_FILE_TRAIN)
+        train_y = np.load(FEAT_Y_FILE_TRAIN)
+        test_x = np.load(FEAT_X_FILE_TEST)
+        test_y = np.load(FEAT_Y_FILE_TEST)
     else:
-        data_x = np.load(FEAT_X_FILE)
-        data_y = np.load(FEAT_Y_FILE)
-        data_x, data_y = shuffle(data_x, data_y)
-        data_x = custom_normalize(data_x)
-        print(f'data x shape: {data_x.shape}')
-        print(f'data y shape: {data_y.shape}')
-        print(f'data y[:10]: {data_y[:10]}')
-        ploted = []
-        plt.figure('feature 0')
-        for i, label in enumerate(data_y):
-            if label not in ploted:
-                ploted.append(label)
-                plt.plot(data_x[i], '-o', label=f'{label}')
-            if len(ploted) >= 6:
-                break
-        plt.legend()
-        plt.show()
+        train_x, train_y = load_raw_data_and_extract_feature(
+            DATA_X_FILE_TRAIN, DATA_Y_FILE_TRAIN,
+            FEAT_X_FILE_TRAIN, FEAT_Y_FILE_TRAIN)
+        test_x, test_y = load_raw_data_and_extract_feature(
+            DATA_X_FILE_TEST, DATA_Y_FILE_TEST,
+            FEAT_X_FILE_TEST, FEAT_Y_FILE_TEST)
+    return train_x, test_x, train_y, test_y
 
-    # Split test set
-    train_x, test_x, train_y, test_y = train_test_split(data_x, data_y, test_size=0.3, random_state=42)
 
-    print(f'train x shape: {train_x.shape}')
-    print(f'test  x shape: {test_x.shape}')
+def load_raw_train_test_data():
+    train_x = np.load(DATA_X_FILE_TRAIN)
+    train_y = np.load(DATA_Y_FILE_TRAIN)
+    test_x = np.load(DATA_X_FILE_TEST)
+    test_y = np.load(DATA_Y_FILE_TEST)
+    train_x, train_y = transform_labels(train_x, train_y)
+    test_x, test_y = transform_labels(test_x, test_y)
+    train_y = train_y.reshape((-1, 1))
+    test_y = test_y.reshape((-1, 1))
 
-    try_the_best(train_x, train_y, test_x, test_y, record_dir)
-    return
+    return train_x, test_x, train_y, test_y
 
-    x, y = train_x, train_y
-    seed = 42
-    k_fold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
-    # lr(x, y, k_fold)
-    # lda(x, y, k_fold)
-    # knn(x, y, k_fold)
-    # naive_bayes(x, y, k_fold)
-    decision_tree(x, y, k_fold)
-    # svm(x, y, k_fold)
+
+def train(record_dir=None, force=False, USE_ML=True):
+    if USE_ML:
+        train_x, test_x, train_y, test_y = load_train_test_data(force=force)
+        print(f'train x shape: {train_x.shape}')
+        print(f'test  x shape: {test_x.shape}')
+        try_the_best(train_x, train_y, test_x, test_y, record_dir)
+        return
+
+        x, y = train_x, train_y
+        seed = 42
+        k_fold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
+        lr(x, y, k_fold)
+        lda(x, y, k_fold)
+        knn(x, y, k_fold)
+        naive_bayes(x, y, k_fold)
+        decision_tree(x, y, k_fold)
+        svm(x, y, k_fold)
+    else:
+        train_x, test_x, train_y, test_y = load_raw_train_test_data()
+        print(f'train x shape: {train_x.shape}')
+        print(f'test  x shape: {test_x.shape}')
+
+        # Down sample
+        train_x = train_x[:, ::2, :]
+        test_x = test_x[:, ::2, :]
+        train_x = train_x[:, :90, :]
+        test_x = test_x[:, :90, :]
+
+        print(f'Down sampled train x shape: {train_x.shape}')
+        print(f'Down sampled test  x shape: {test_x.shape}')
+
+        model_path = CNN_MODEL_PATH
+        start_training(train_x, train_y, test_x, test_y, model_path)
 
 
 def predicted_result_smooth(predicted_results):
@@ -335,7 +343,6 @@ def predicted_result_smooth(predicted_results):
         percent = stat / 20
         is_stabled = False
         for i, p in enumerate(percent):
-            print(p)
             if p > 0.8:
                 is_stabled = True
                 stable_y = i
@@ -372,14 +379,18 @@ def evaluate_record_with_model(model, record_dir: Path, win_size=200, stride=25)
 
     # data_x, data_y = load_and_split_data(record_dir)
     print(f'test raw data x shape: {data_x.shape}')
-    data_x = feature_extract(data_x)
-    data_x = custom_normalize(data_x)
-    print(f'test data x shape: {data_x.shape}')
-    predicted = model.predict(data_x)
+    feat_x = feature_extract(data_x)
+    feat_x = custom_normalize(feat_x)
+    print(f'test data x shape: {feat_x.shape}')
+    predicted = model.predict(feat_x)
     predicted_labels = [ACTIVITY_TYPE_NAME[i] for i in predicted]
     smoothed = predicted_result_smooth(predicted)
     smoothed_labels = [ACTIVITY_TYPE_NAME[i] for i in smoothed]
     print(f'model parameters: {model.get_params()}')
+
+    predictor = ActivityPredictor()
+    predicted_cnn = predictor.predict(data_x)
+    predicted_labels_cnn = [ACTIVITY_TYPE_NAME[i] for i in predicted_cnn]
 
     plt.figure('An real case')
     plt.subplot(211)
@@ -387,8 +398,9 @@ def evaluate_record_with_model(model, record_dir: Path, win_size=200, stride=25)
     plt.title(record_dir.name)
     plt.plot(data)
     plt.subplot(212, sharex=ax1)
-    plt.plot(data_x_index, predicted_labels, '-or', label='predicted', markersize=3)
-    plt.plot(data_x_index, smoothed_labels, '-og', label='smoothed', markersize=3)
+    plt.plot(data_x_index, predicted_labels, '-or', label='predicted decision tree', markersize=3)
+    # plt.plot(data_x_index, smoothed_labels, '-og', label='smoothed', markersize=3)
+    plt.plot(data_x_index, predicted_labels_cnn, '-ob', label='predicted cnn', markersize=3)
     # plt.plot(data_y, '-o', label='actual')
     plt.legend(loc='upper right')
     plt.grid()
@@ -402,12 +414,157 @@ def evaluate_record(record_dir: Path, win_size=200, stride=25):
     evaluate_record_with_model(model, record_dir)
 
 
+class ActivityCNN(nn.Module):
+    def __init__(self, seq_len=90, in_ch=6, hidden_ch=20, out_ch=6, dropout_ratio=0.1):
+        """
+        :param seq_len:    输入序列长度
+        :param in_ch:      输入channel
+        :param hidden_ch:  隐藏层channel
+        :param out_ch:     输出channel，即分类的类别
+        """
+        super(ActivityCNN, self).__init__()
+
+        # Normalize or standardize parameter
+        self.norm = None
+
+        stride = 6
+        kernel_size = 6
+        self.conv1 = nn.Conv1d(in_ch, hidden_ch, kernel_size=kernel_size, stride=stride, padding=0)
+        logger.debug(f'conv1 weight shape: {self.conv1.weight.shape}')
+        self.relu1 = nn.ReLU()
+        self.dropout1 = nn.Dropout(dropout_ratio)
+        self.out_len1 = (seq_len - kernel_size) // stride + 1
+        # self.pooling1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        # self.out_len1 = self.out_len1 // 2
+        logger.debug(f'conv1 output seq len: {self.out_len1}')
+
+        kernel_size = 3
+        self.conv2 = nn.Conv1d(hidden_ch, hidden_ch, kernel_size, stride=2, dilation=1)
+        logger.debug(f'conv2 weight shape: {self.conv2.weight.shape}')
+        self.relu2 = nn.ReLU()
+        self.dropout2 = nn.Dropout(dropout_ratio)
+        self.out_len2 = (self.out_len1 - kernel_size) // 2 + 1
+        logger.debug(f'conv2 output seq len: {self.out_len2}')
+
+        self.conv3 = nn.Conv1d(hidden_ch, hidden_ch, kernel_size, stride=2, dilation=1)
+        logger.debug(f'conv3 weight shape: {self.conv3.weight.shape}')
+        self.relu3 = nn.ReLU()
+        self.dropout3 = nn.Dropout(dropout_ratio)
+        self.out_len3 = (self.out_len2 - 1 * (kernel_size - 1) - 1) // 2 + 1
+        logger.debug(f'conv3 output seq len: {self.out_len3}')
+
+        k4 = 3
+        self.conv4 = nn.Conv1d(hidden_ch, out_ch, kernel_size=k4, stride=2, dilation=1)
+        logger.debug(f'conv4 weight shape: {self.conv4.weight.shape}')
+        self.out_len = (self.out_len3 - 1 * (k4 - 1) - 1) // 2 + 1
+        logger.debug(f'conv4 output seq len: {self.out_len}')
+
+        self.net = nn.Sequential(self.conv1, self.relu1, self.dropout1,
+                                 self.conv2, self.relu2, self.dropout2,
+                                 self.conv3, self.relu3, self.dropout3,
+                                 self.conv4)
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class ActivityPredictor:
+    def __init__(self, seq_len=200):
+        self.seq_len = seq_len
+        self.model = ActivityCNN(seq_len=seq_len)
+        state = torch.load(CNN_MODEL_PATH)
+        self.norm = state['norm']
+        logger.info(f'Using model: {CNN_MODEL_PATH.stem}')
+        logger.info(f'Model norm param: {self.norm}')
+        self.model.load_state_dict(state['state_dict'])
+        self.model.eval()
+
+    def predict(self, x, return_prob=False):
+        test_x = normalize_data(x, self.norm)
+        test_x = np.transpose(test_x, (0, 2, 1))
+        logger.debug(f'test_x shape after transpose: {test_x.shape}')
+
+        test_x = torch.from_numpy(test_x.astype(np.float32))
+        outputs = self.model(test_x)
+        logger.debug(f'outputs shape: {outputs.shape}')
+        y_score = torch.softmax(outputs, 1)
+        y_score = y_score.detach().numpy()
+        y_score = np.transpose(y_score, (0, 2, 1))
+        prob = np.squeeze(outputs.detach().numpy())
+        if return_prob:
+            return np.argmax(prob, axis=1), prob
+        else:
+            return np.argmax(prob, axis=1)
+
+
+def calculate_weights(y, type_num):
+    w = np.zeros(type_num)
+    for i in range(type_num):
+        w[i] = np.sum(y == i)
+        print(f'Type {i}: num: {w[i]}')
+    if np.any(w <= 0):
+        raise RuntimeError('Some type\'s data is missing')
+    return w.min() / w
+
+
+def start_training(train_x, train_y, test_x, test_y, model_path, cv_size=0.1, random_state=42):
+    # Shuffle
+    train_x, train_y = shuffle(train_x, train_y, random_state=random_state)
+    test_x, test_y = shuffle(test_x, test_y, random_state=random_state)
+
+    # Split cv set from train set
+    train_x, cv_x, train_y, cv_y = train_test_split(train_x, train_y, test_size=cv_size, random_state=random_state,
+                                                    stratify=train_y)
+    # Shift and balance training data set
+    # train_x, train_y = load_training_data_post_process(train_x, train_y, enable_shift=False, do_balance=True)
+
+    # Normalize
+    train_x, norm = data_normalize(train_x)
+    cv_x = normalize_data(cv_x, norm)
+    test_x = normalize_data(test_x, norm)
+
+    # Training
+    train_x = np.transpose(train_x, (0, 2, 1))
+    cv_x = np.transpose(cv_x, (0, 2, 1))
+    test_x = np.transpose(test_x, (0, 2, 1))
+    logger.info(f'Train x transposed shape: {train_x.shape}')
+    logger.info(f'train y shape: {train_y.shape}')
+    logger.info(f'CV    x transposed shape: {cv_x.shape}')
+    logger.info(f'Test  x transposed shape: {test_x.shape}')
+
+    lr = 1e-3
+    batch_size = 16
+    epochs = 15
+
+    # TODO: CHANGE THIS WHEN TRAINING DIFFERENT MODEL
+    model = ActivityCNN(seq_len=train_x.shape[-1])
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    weights = calculate_weights(train_y, len(ACTIVITY_TYPE))
+    type_weights = torch.tensor(weights, dtype=torch.float32)
+    logger.info(f'Loss weight: {type_weights}')
+    criterion = torch.nn.CrossEntropyLoss(weight=type_weights)
+
+    # Remove other style
+    # train_x, train_y = remove_other_type(train_x, train_y)
+    # cv_x, cv_y = remove_other_type(cv_x, cv_y)
+    # test_x, test_y = remove_other_type(test_x, test_y)
+    cm_labels = ACTIVITY_TYPE
+    cm_names = ACTIVITY_TYPE_NAME
+
+    data = train_x, train_y, cv_x, cv_y, test_x, test_y, norm
+
+    training(data, model, optimizer, criterion, batch_size, epochs, model_path,
+             cm_labels=cm_labels, cm_names=cm_names)
+
+
 @click.command()
 @click.argument('record-dir')
 @click.option('-t', '--train-model', is_flag=True, help='Training model')
-def main(record_dir, train_model):
+@click.option('-f', '--force', is_flag=True, help='force extract feature')
+def main(record_dir, train_model, force):
     if train_model:
-        train(Path(record_dir), force=True)
+        train(Path(record_dir), force, USE_ML=False)
     else:
         evaluate_record(Path(record_dir))
 
