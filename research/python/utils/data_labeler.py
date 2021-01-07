@@ -11,6 +11,10 @@ from matplotlib import widgets
 from matplotlib.widgets import Cursor
 import numpy as np
 import PySimpleGUI as sg
+from scipy import signal
+
+
+FILTER_B, FILTER_A = signal.butter(5, 0.05, 'lowpass', output='ba')
 
 
 class DataLabel:
@@ -109,7 +113,8 @@ class DataLabeler:
     def process(self, utc_base, ts, acc, file_name, selected=0, labels=None):
         self.labels = []
         self.selected = selected
-        self.data_len = len(acc)
+        data_len = len(acc)
+        self.data_len = data_len
         aligned_utc = ts.copy()
         aligned_utc[0] = utc_base
         for i, t in enumerate(ts[1:], 1):
@@ -121,8 +126,9 @@ class DataLabeler:
         print(f'UTC date from {utc_date[0]} to {utc_date[-1]}')
 
         print(f'Acc data shape: {acc.shape}')
+        acc_lp = signal.filtfilt(FILTER_B, FILTER_A, acc, axis=0)
         mag = np.linalg.norm(acc, axis=1)
-        data_len = len(mag)
+        mag_lp = np.linalg.norm(acc_lp, axis=1)
         print(f'Acc magnitude shape: {mag.shape}')
 
         # fig, ax = plt.subplots()
@@ -132,8 +138,8 @@ class DataLabeler:
         plt.locator_params(nbins=8)
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         plt.locator_params(axis='x', nbins=10)
-        plt.subplot(211)
-        plt.plot(mag, label='Acc magnitude')
+        plt.subplot(311)
+        plt.plot(mag_lp, label='Acc low pass magnitude')
         ax = plt.gca()
         self.label_ax = ax
         _ = Cursor(ax, useblit=True, color='red', linewidth=2)
@@ -152,10 +158,14 @@ class DataLabeler:
                 self.label_vspans.append(span)
         plt.grid()
         plt.legend(loc='upper right')
-        plt.subplot(212)
-        plt.plot(acc.T[0], label='acc x')
-        plt.plot(acc.T[1], label='acc y')
-        plt.plot(acc.T[2], label='acc z')
+        plt.subplot(312, sharex=ax)
+        plt.plot(acc_lp.T[0], label='acc_lp x')
+        plt.plot(acc_lp.T[1], label='acc_lp y')
+        plt.plot(acc_lp.T[2], label='acc_lp z')
+        plt.grid()
+        plt.legend(loc='upper right')
+        plt.subplot(313, sharex=ax)
+        plt.plot(mag, label='Acc raw magnitude')
         plt.grid()
         plt.legend(loc='upper right')
         plt.show()
