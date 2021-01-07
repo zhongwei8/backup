@@ -60,20 +60,24 @@ class DataLabeler:
                        key='selected-type',
                        enable_events=False)
         ], [
-            sg.Button('Submit', key='btn_submit'),
-            sg.Button('Cancel', key='btn_cancel')
+            sg.Button('Submit(Enter)', key='btn_submit'),
+            sg.Button('Cancel(Esc/BackSpace)', key='btn_cancel')
         ]]
 
-        window = sg.Window('Label Window', layout, location=location)
+        window = sg.Window('Label Window',
+                           layout,
+                           location=location,
+                           return_keyboard_events=True)
 
         while True:
             event, values = window.read()
             print(f'event: {event}')
-            if event == sg.WIN_CLOSED or event in ('Exit', 'btn_cancel'):
+            if (event == sg.WIN_CLOSED
+                    or event in ('Escape:9', 'btn_cancel', 'BackSpace:22')):
                 print('Give up current label')
                 activity_type_name = ''
                 break
-            if event == 'btn_submit':
+            if event in ('Return:36', 'btn_submit'):
                 activity_type_name = values['selected-type'][0]
                 break
 
@@ -144,6 +148,7 @@ class DataLabeler:
         plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.2)
         plt.locator_params(axis='x', nbins=10)
         plt.subplot(311)
+        plt.title(self.label_items[selected])
         plt.plot(mag_lp, label='Acc low pass magnitude')
         ax = plt.gca()
         self.label_ax = ax
