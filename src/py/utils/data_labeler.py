@@ -14,7 +14,7 @@ import PySimpleGUI as sg
 from scipy import signal
 
 
-FILTER_B, FILTER_A = signal.butter(5, 0.05, 'lowpass', output='ba')
+FILTER_B, FILTER_A = signal.butter(5, 0.2, 'lowpass', output='ba')
 
 
 class DataLabel:
