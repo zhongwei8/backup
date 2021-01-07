@@ -36,6 +36,7 @@ class DataLabeler:
         self.data_len = 0
         self.label_ax = None
         self.label_vspans = []
+        self.relabel = False
 
     def popup_label_window(self,
                            start,
@@ -83,6 +84,10 @@ class DataLabeler:
     def onselect(self, v_min, v_max):
         # print(f'Processing selected range: {v_min} - {v_max}')
         if self.label_vspans:
+            if not self.relabel:
+                res = sg.popup_ok_cancel('确定重新标注？', location=(400, 300))
+                if res.lower() == 'cancel':
+                    return
             for span in self.label_vspans:
                 span.remove()
                 plt.draw()
