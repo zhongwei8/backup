@@ -20,7 +20,6 @@ from activity_data_labeler import label_convert_ts2index
 from activity_data_labeler import load_label_result
 from utils.log import Log
 
-
 ACC_SUFFIX = 'accel-52HZ.csv'
 GYRO_SUFFIX = 'gyroscope-52HZ.csv'
 MAGNET_SUFFIX = 'magnet-50HZ.csv'
@@ -31,9 +30,7 @@ CTM_HEADER_NAME = 'CurrentTimeMillis'
 TS_HEADER_NAME = 'EventTimestamp(ns)'
 TSS = [CTM_HEADER_NAME, TS_HEADER_NAME]
 
-DATA_SETS_TO_USE = [
-    'all-train'
-]
+DATA_SETS_TO_USE = ['all-train']
 
 FILTER_B, FILTER_A = signal.butter(5, 0.025, 'lowpass', output='ba')
 exception_record_list = []
@@ -44,7 +41,9 @@ def get_activity_type_name_by_file_name(file_name: str):
     return metas[7].split('_')[1]
 
 
-def load_sensor_data_and_labels_by_name(record_dir, type_name='accel', inference=False):
+def load_sensor_data_and_labels_by_name(record_dir,
+                                        type_name='accel',
+                                        inference=False):
     print(f'\nProcessing record dir： {record_dir}')
     if type_name == 'accel':
         suffix = ACC_SUFFIX
@@ -82,7 +81,8 @@ def load_sensor_data_and_labels_by_name(record_dir, type_name='accel', inference
     else:
         if inference:
             Log.i('Label file not exists, Using activity type name Infer.')
-            activity_type_name = get_activity_type_name_by_file_name(record_dir.name)
+            activity_type_name = get_activity_type_name_by_file_name(
+                record_dir.name)
             is_daily = activity_type_name in LABEL_DAILY
             is_other_sports = activity_type_name in LABEL_OTHER_SPORTS
             if is_daily or is_other_sports:
@@ -90,13 +90,18 @@ def load_sensor_data_and_labels_by_name(record_dir, type_name='accel', inference
                     activity_type_name_as = 'DailyActivity'
                 else:
                     activity_type_name_as = 'OtherSports'
-                activity_type = LABEL_ITEMS_INDEX_DICT.get(activity_type_name_as)
-                print(f'Treat {activity_type_name} as {activity_type_name_as}: {activity_type}')
+                activity_type = LABEL_ITEMS_INDEX_DICT.get(
+                    activity_type_name_as)
+                print(
+                    f'Treat {activity_type_name} as {activity_type_name_as}: {activity_type}'
+                )
                 labels = [(activity_type, 0, data.shape[0])]
             else:
                 labels = None
         else:
-            Log.w('Label file not exists, Inference by activity type name disabled. Skipped!')
+            Log.w(
+                'Label file not exists, Inference by activity type name disabled. Skipped!'
+            )
             labels = None
 
     return data_ts, data, labels
@@ -141,7 +146,10 @@ def load_sensor_data_and_labels(record_dir):
     return ts, data, labels
 
 
-def load_and_split_data(record_dir: Path, win_size=200, stride=25, inference=False) -> np.ndarray:
+def load_and_split_data(record_dir: Path,
+                        win_size=200,
+                        stride=25,
+                        inference=False) -> np.ndarray:
     ts, data, labels = load_sensor_data_and_labels_by_name(record_dir,
                                                            type_name='accel',
                                                            inference=inference)
@@ -159,7 +167,9 @@ def load_and_split_data(record_dir: Path, win_size=200, stride=25, inference=Fal
     return np.asarray(data_segments), np.asarray(segments_label)
 
 
-def load_and_split_all_records(dataset_dir: Path, dataset_names, type_inference=False):
+def load_and_split_all_records(dataset_dir: Path,
+                               dataset_names,
+                               type_inference=False):
     global exception_record_list
     all_data = []
     all_labels = []
@@ -169,14 +179,17 @@ def load_and_split_all_records(dataset_dir: Path, dataset_names, type_inference=
         for type_dir in filter(Path.is_dir, d.iterdir()):
             print(f'\nPocessing type dir: {type_dir}')
             for record_dir in filter(Path.is_dir, type_dir.iterdir()):
-                data, label = load_and_split_data(record_dir, inference=type_inference)
+                data, label = load_and_split_data(record_dir,
+                                                  inference=type_inference)
                 if data is None and label is None:
                     Log.e(f'Record has exception, check it out: {record_dir}')
                     exception_record_list.append(record_dir)
                 elif data is not None and label is None:
                     Log.w(f'Record has no label, check it out: {record_dir}')
                 else:
-                    print(f'Record data segment shape: {data.shape}, label shape: {label.shape}')
+                    print(
+                        f'Record data segment shape: {data.shape}, label shape: {label.shape}'
+                    )
                     if data.shape[1] != 6 and data.shape[2] != 6:
                         Log.e(f'Record data shape not correct: {record_dir}')
                     all_data.append(data)
@@ -336,8 +349,14 @@ def main(ctx, data_dir):
 
 @main.command()
 @click.option('-n', '--set-name', help='Dataset name suffix')
-@click.option('-f', '--force', is_flag=True, help='Force gennerate labeled activity raw data')
-@click.option('-i', '--type-inference', is_flag=True, help='Inference activity type by name')
+@click.option('-f',
+              '--force',
+              is_flag=True,
+              help='Force gennerate labeled activity raw data')
+@click.option('-i',
+              '--type-inference',
+              is_flag=True,
+              help='Inference activity type by name')
 @click.pass_context
 def pp(ctx, set_name, force, type_inference):
     global exception_record_list
@@ -349,7 +368,9 @@ def pp(ctx, set_name, force, type_inference):
     data_x_file = Path(f'../data/activity_data_x_raw{set_name_suffix}.npy')
     data_y_file = Path(f'../data/activity_data_y_raw{set_name_suffix}.npy')
     if force or not (data_x_file.exists() and data_y_file.exists()):
-        data, label = load_and_split_all_records(dataset_dir, DATA_SETS_TO_USE, type_inference=type_inference)
+        data, label = load_and_split_all_records(dataset_dir,
+                                                 DATA_SETS_TO_USE,
+                                                 type_inference=type_inference)
         np.save(data_x_file, data)
         np.save(data_y_file, label)
         print(f'Saved data_x to path: {data_x_file}')
@@ -363,7 +384,11 @@ def pp(ctx, set_name, force, type_inference):
     print(f'label shape: {label.shape}')
     print('Count the data')
     labels, counts = np.unique(label, return_counts=True)
-    print(json.dumps(dict(zip([LABEL_ITEMS[i] for i in labels], counts.tolist())), indent=4, sort_keys=False))
+    print(
+        json.dumps(dict(zip([LABEL_ITEMS[i] for i in labels],
+                            counts.tolist())),
+                   indent=4,
+                   sort_keys=False))
 
 
 if __name__ == "__main__":

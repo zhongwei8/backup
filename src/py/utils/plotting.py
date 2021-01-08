@@ -39,14 +39,25 @@ def plot_x_with_idx2(x, idx, idx2, title="", x_label='x', y_label='y'):
             else:
                 plt.plot(idx[i], x[idx[i]], '-ob')
             cnt += 1
-            plt.annotate(cnt, xy=(idx[i], x[idx[i]]), xycoords='data',
-                         xytext=(+0, +30), textcoords='offset points', fontsize=10,
-                         arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
+            plt.annotate(cnt,
+                         xy=(idx[i], x[idx[i]]),
+                         xycoords='data',
+                         xytext=(+0, +30),
+                         textcoords='offset points',
+                         fontsize=10,
+                         arrowprops=dict(arrowstyle="->",
+                                         connectionstyle="arc3,rad=.2"))
     plt.legend()
     plt.show()
 
 
-def plot_xy_in_one(x, y, title="", x_label='x', y_label='y', x_legend='x', y_legend='y'):
+def plot_xy_in_one(x,
+                   y,
+                   title="",
+                   x_label='x',
+                   y_label='y',
+                   x_legend='x',
+                   y_legend='y'):
     plt.figure(title)
     plt.title(title)
     plt.xlabel(x_label)
@@ -57,7 +68,11 @@ def plot_xy_in_one(x, y, title="", x_label='x', y_label='y', x_legend='x', y_leg
     plt.show()
 
 
-def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
+def plot_confusion_matrix(cm,
+                          classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -81,7 +96,10 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center",
+        plt.text(j,
+                 i,
+                 format(cm[i, j], fmt),
+                 horizontalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
     plt.ylabel('True label')
@@ -91,14 +109,25 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     return fig
 
 
-def pretty_plot_confusion_matrix(cm, classes, title='Confusion Matrix', annot=True, cmap='Oranges', fmt='.2f', fz=11,
-                                 lw=0.5, cbar=False, figsize=[8, 8], show_null_values=0, pred_val_axis='y'):
+def pretty_plot_confusion_matrix(cm,
+                                 classes,
+                                 title='Confusion Matrix',
+                                 annot=True,
+                                 cmap='Oranges',
+                                 fmt='.2f',
+                                 fz=11,
+                                 lw=0.5,
+                                 cbar=False,
+                                 figsize=[8, 8],
+                                 show_null_values=0,
+                                 pred_val_axis='y'):
     df_cm = pd.DataFrame(cm, index=classes, columns=classes)
-    return pp_cm(df_cm, title, annot, cmap, fmt, fz, lw, cbar, figsize, show_null_values, pred_val_axis)
+    return pp_cm(df_cm, title, annot, cmap, fmt, fz, lw, cbar, figsize,
+                 show_null_values, pred_val_axis)
 
 
 def f_measure(beta, precision, recall):
-    beta_2 = beta ** 2
+    beta_2 = beta**2
     v = (beta_2 + 1) * precision * recall
     return v / (beta_2 * precision + recall)
 
@@ -122,13 +151,20 @@ def plot_pr_curve(y_test: np.ndarray, y_score: np.ndarray):
     print(f'y_test: {y_test.shape}')
     print(f'y_score: {y_score.shape}')
     if not y_test.shape == y_score.shape:
-        raise ValueError(f'Shape not match: y_test shape: {y_test.shape}, y_score_shape: {y_score.shape}')
+        raise ValueError(
+            f'Shape not match: y_test shape: {y_test.shape}, y_score_shape: {y_score.shape}'
+        )
     for i in range(n_classes):
-        precision[i], recall[i], threshold[i] = precision_recall_curve(y_test[:, i], y_score[:, i])
-        average_precision[i] = average_precision_score(y_test[:, i], y_score[:, i])
+        precision[i], recall[i], threshold[i] = precision_recall_curve(
+            y_test[:, i], y_score[:, i])
+        average_precision[i] = average_precision_score(y_test[:, i],
+                                                       y_score[:, i])
     # A "micro-average": quantifying score on all classes jointly
-    precision["micro"], recall["micro"], _ = precision_recall_curve(y_test.ravel(), y_score.ravel())
-    average_precision["micro"] = average_precision_score(y_test, y_score, average="micro")
+    precision["micro"], recall["micro"], _ = precision_recall_curve(
+        y_test.ravel(), y_score.ravel())
+    average_precision["micro"] = average_precision_score(y_test,
+                                                         y_score,
+                                                         average="micro")
 
     plt.figure('PR-Curve', figsize=(7, 8))
     f_scores = np.linspace(0.3, 0.9, num=7)
@@ -145,7 +181,8 @@ def plot_pr_curve(y_test: np.ndarray, y_score: np.ndarray):
         labels.append('iso-f1 curves')
     line, = plt.plot(recall["micro"], precision["micro"], color='gold', lw=2)
     lines.append(line)
-    labels.append('micro-average PR (area = {0:0.2f})'.format(average_precision["micro"]))
+    labels.append('micro-average PR (area = {0:0.2f})'.format(
+        average_precision["micro"]))
 
     for i in range(n_classes):
         f1 = f1_measure(precision[i], recall[i])
@@ -153,9 +190,13 @@ def plot_pr_curve(y_test: np.ndarray, y_score: np.ndarray):
         line, = plt.plot(recall[i], precision[i], lw=2)
         info = (recall[i][j], precision[i][j], threshold[i][j], f1[j])
         plt.scatter(recall[i][j], precision[i][j], s=100)
-        plt.annotate(f'(%.2f,%.2f,%.3f,%.3f)' % info, xy=info[:2], xytext=(-20, 10), textcoords='offset points')
+        plt.annotate(f'(%.2f,%.2f,%.3f,%.3f)' % info,
+                     xy=info[:2],
+                     xytext=(-20, 10),
+                     textcoords='offset points')
         lines.append(line)
-        labels.append('PR for class {0} (area = {1:0.2f})'.format(i, average_precision[i]))
+        labels.append('PR for class {0} (area = {1:0.2f})'.format(
+            i, average_precision[i]))
 
     fig = plt.gcf()
     fig.subplots_adjust(bottom=0.25)

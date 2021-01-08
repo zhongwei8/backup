@@ -13,7 +13,6 @@ import numpy as np
 import PySimpleGUI as sg
 from scipy import signal
 
-
 FILTER_B, FILTER_A = signal.butter(5, 0.2, 'lowpass', output='ba')
 
 
@@ -38,10 +37,7 @@ class DataLabeler:
         self.label_vspans = []
         self.relabel = False
 
-    def popup_label_window(self,
-                           start,
-                           end,
-                           location=(400, 300)):
+    def popup_label_window(self, start, end, location=(400, 300)):
         activity_names = self.label_items
         activity_type_name = activity_names[self.selected]
 
@@ -49,20 +45,23 @@ class DataLabeler:
         layout = [[
             sg.Text('Start Point', size=name_size),
             sg.Text(f'{start}', key='start_point')
-        ], [
-            sg.Text('End Point', size=name_size),
-            sg.Text(f'{end}', key='end_point')
-        ], [
-            sg.Text('Activity Type', size=name_size),
-            sg.Listbox(values=activity_names,
-                       default_values=activity_type_name,
-                       size=(20, 12),
-                       key='selected-type',
-                       enable_events=False)
-        ], [
-            sg.Button('Submit(Enter)', key='btn_submit'),
-            sg.Button('Cancel(Esc/BackSpace)', key='btn_cancel')
-        ]]
+        ],
+                  [
+                      sg.Text('End Point', size=name_size),
+                      sg.Text(f'{end}', key='end_point')
+                  ],
+                  [
+                      sg.Text('Activity Type', size=name_size),
+                      sg.Listbox(values=activity_names,
+                                 default_values=activity_type_name,
+                                 size=(20, 12),
+                                 key='selected-type',
+                                 enable_events=False)
+                  ],
+                  [
+                      sg.Button('Submit(Enter)', key='btn_submit'),
+                      sg.Button('Cancel(Esc/BackSpace)', key='btn_cancel')
+                  ]]
 
         window = sg.Window('Label Window',
                            layout,
@@ -157,6 +156,7 @@ class DataLabeler:
         def format_func(x_tick, pos=None):
             this_index = np.clip(int(x_tick + 0.5), 0, data_len - 1).item()
             return utc_date[this_index]
+
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(format_func))
         _ = widgets.SpanSelector(ax,
                                  self.onselect,

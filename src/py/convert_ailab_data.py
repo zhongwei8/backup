@@ -10,7 +10,6 @@ import pandas as pd
 
 from activity_data_labeler import LABEL_ITEMS
 
-
 ORIGIN_LABEL_NAMES = [
     "None", "WalkOutSide", "WalkInDoor", "RuningOutSide", "InCar", "Lying",
     "Biking", "Sitting", "Upstairs", "Downstairs", "Standing", "Driving",
@@ -44,7 +43,6 @@ LABEL_CONVERT_MAP = {
     i: LABEL_ITEMS.index(LABEL_NAMES_CONVERT_MAP[k])
     for i, k in enumerate(ORIGIN_LABEL_NAMES)
 }
-
 
 OLD_HEADER_NAMES = [
     'CurrentTimestamp', 'EventTimestamp', 'AccelX', 'AccelY', 'AccelZ',

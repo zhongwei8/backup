@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 
 import click
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,7 +22,9 @@ from utils import log
 logger = log.create_logger('ActiDataLabeler')
 
 SENSOR_DATA_NAMES = ['type', 'ts', 'x', 'y', 'z', 'xe', 'ye', 'ze']
-SENSOR_DATA_HEADER = ['CurrentTimeMillis', 'EventTimestamp(ns)', 'accel_x', 'accel_y', 'accel_z']
+SENSOR_DATA_HEADER = [
+    'CurrentTimeMillis', 'EventTimestamp(ns)', 'accel_x', 'accel_y', 'accel_z'
+]
 CTM_HEADER_NAME = 'CurrentTimeMillis'
 TS_HEADER_NAME = 'EventTimestamp(ns)'
 TSS = [CTM_HEADER_NAME, TS_HEADER_NAME]
@@ -31,52 +32,42 @@ TSS = [CTM_HEADER_NAME, TS_HEADER_NAME]
 # !! In order to be compatible with historical annotations, please add the type at the end instead of inserting
 # Refer to list: https://xiaomi.f.mioffice.cn/docs/dock4H2cyIYjwEGAnMmFH5GOcTc#
 LABEL_ITEMS = (
-    'Undefined',          # 0
-    'Static',             # 1
-    'DailyActivity',      # 2, Such as Working/Writing/Chatting
-    'OtherSports',        # 3, Larger motions, such as Fitness/Playing ball/Washing
-    'BriskWalkInDoor',    # 4
-    'BriskWalkOutSide',   # 5
-    'RuningInDoor',       # 6
-    'RuningOutSide',      # 7
-    'BikingInDoor',       # 8
-    'BikingOutSide',      # 9
-    'EBikingOutSide',     # 10
+    'Undefined',  # 0
+    'Static',  # 1
+    'DailyActivity',  # 2, Such as Working/Writing/Chatting
+    'OtherSports',  # 3, Larger motions, such as Fitness/Playing ball/Washing
+    'BriskWalkInDoor',  # 4
+    'BriskWalkOutSide',  # 5
+    'RuningInDoor',  # 6
+    'RuningOutSide',  # 7
+    'BikingInDoor',  # 8
+    'BikingOutSide',  # 9
+    'EBikingOutSide',  # 10
     'MotoBikingOutSide',  # 11
-    'SwimmingInDoor',     # 12
-    'SwimmingOutSide',    # 13
-    'SubwayTaking',       # 14
-    'BusTaking',          # 15
-    'CarTaking',          # 16
-    'CoachTaking',        # 17
-    'Sitting',            # 18
-    'Standing',           # 19
-    'Lying',              # 20
+    'SwimmingInDoor',  # 12
+    'SwimmingOutSide',  # 13
+    'SubwayTaking',  # 14
+    'BusTaking',  # 15
+    'CarTaking',  # 16
+    'CoachTaking',  # 17
+    'Sitting',  # 18
+    'Standing',  # 19
+    'Lying',  # 20
     'EllipticalMachine',  # 21
-    'RowingMachine',      # 22
-    'Upstairs',           # 23
-    'Downstairs',         # 24
-    'Driving',            # 25
-    'RopeJump',           # 26
-    'SlowWalk'            # 27
+    'RowingMachine',  # 22
+    'Upstairs',  # 23
+    'Downstairs',  # 24
+    'Driving',  # 25
+    'RopeJump',  # 26
+    'SlowWalk'  # 27
 )
 
 LABEL_DAILY = [
-    'DailyActivity',
-    'SubwayTaking',
-    'BusTaking',
-    'CarTaking',
-    'CoachTaking',
-    'Sitting',
-    'Standing',
-    'Lying',
-    'Driving'
+    'DailyActivity', 'SubwayTaking', 'BusTaking', 'CarTaking', 'CoachTaking',
+    'Sitting', 'Standing', 'Lying', 'Driving'
 ]
 
-LABEL_OTHER_SPORTS = [
-    'OtherSports',
-    'RopeJump'
-]
+LABEL_OTHER_SPORTS = ['OtherSports', 'RopeJump']
 
 LABEL_ITEMS_INDEX_DICT = dict(zip(LABEL_ITEMS, list(range(len(LABEL_ITEMS)))))
 LABEL_RESULT_FILE_NAME = Path('activity_label_result.csv')
@@ -94,11 +85,11 @@ class MetaType(Enum):
 def label_convert_ts2index(labels_ts, ts_arr):
     labels_index = []
     max_idx = len(ts_arr) - 1
-    print(f'TS arr range: {ts_arr[0]} - {ts_arr[-1]}, Total len: {max_idx + 1}')
+    print(f'TS range: {ts_arr[0]} - {ts_arr[-1]}, Total len: {max_idx + 1}')
     for t, s, e in labels_ts:
         print(f'Finding TS label {t}: {s} - {e}')
         if s > ts_arr[-1] or e < ts_arr[0]:
-            print(f'ts has no overlap: {s} > {ts_arr[-1]} or {e} < {ts_arr[0]}')
+            print(f'TS has not match: {s} > {ts_arr[-1]} or {e} < {ts_arr[0]}')
             continue
         start_index = -1
         end_index = -1
@@ -260,7 +251,8 @@ def check_result_file(result_file: Path, force):
         if force:
             os.remove(result_file)
         else:
-            logger.error('Label result file exists. To force override use option "-f".')
+            logger.error(
+                'Label result file exists. To force override use option "-f".')
             exit(1)
 
 
@@ -306,8 +298,14 @@ def check_one_file(acc_file: Path, return_fig=False):
 
 @click.command()
 @click.argument('file-path')
-@click.option('-f', '--force', is_flag=True, help='Force generate label result file')
-@click.option('-t', '--statistics', is_flag=True, help='Statistics the label result')
+@click.option('-f',
+              '--force',
+              is_flag=True,
+              help='Force generate label result file')
+@click.option('-t',
+              '--statistics',
+              is_flag=True,
+              help='Statistics the label result')
 @click.option('-c', '--check', is_flag=True, help='Check the label result')
 def main(file_path, force, statistics, check):
     global stat_results
