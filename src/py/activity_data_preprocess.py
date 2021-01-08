@@ -13,7 +13,6 @@ import pandas as pd
 from activity_data_labeler import label_convert_ts2index
 from activity_data_labeler import load_label_result
 
-
 ACC_SUFFIX = 'accel-52HZ.csv'
 GYRO_SUFFIX = 'gyroscope-52HZ.csv'
 MAGNET_SUFFIX = 'magnet-50HZ.csv'
@@ -26,17 +25,15 @@ HEADER_NAMES = [
 ]
 
 HEADER_TYPES = [
-    int, int, float, float, float,
-    float, float, float, float, float, float, int
+    int, int, float, float, float, float, float, float, float, float, float,
+    int
 ]
 
 HEADER_NAMES_TYPE = dict(zip(HEADER_NAMES, HEADER_TYPES))
 
 SENSOR_TIMESTAMP_NS_ERROR_MAX = 3000_000  # 3ms
 
-DATASET_TO_USE = [
-    '20201205-20201211'
-]
+DATASET_TO_USE = ['20201205-20201211']
 
 
 def get_activity_type_name_by_record_name(record_name: str):

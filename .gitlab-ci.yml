@@ -1,0 +1,19 @@
+image: cr.d.xiaomi.net/miot-algorithm/devel:latest
+
+
+stages:
+  - downstream
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+
+trigger-downstream:
+  stage: downstream
+  variables:
+    UPSTREAM_PROJECT: $CI_PROJECT_NAME
+    UPSTREAM_BRANCH: $CI_COMMIT_REF_NAME
+  trigger:
+    project: miot-algorithm/miot-sensing-algorithms
+    branch: chore-add-ci
+    strategy: depend

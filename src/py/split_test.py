@@ -9,10 +9,7 @@ import subprocess
 
 import click
 
-
-DATA_SETS_TO_USE = [
-    'all'
-]
+DATA_SETS_TO_USE = ['all']
 
 
 def split_test_set(dataset_dir: Path, dataset_names, test_size=0.2):
@@ -26,7 +23,10 @@ def split_test_set(dataset_dir: Path, dataset_names, test_size=0.2):
             if not target_dir.exists():
                 print(f'Creating directory: {target_dir}')
                 target_dir.mkdir(parents=True)
-            all_records = [record_dir for record_dir in filter(Path.is_dir, type_dir.iterdir())]
+            all_records = [
+                record_dir
+                for record_dir in filter(Path.is_dir, type_dir.iterdir())
+            ]
             total_num = len(all_records)
             test_num = int(total_num * test_size)
             test_records = sample(all_records, test_num)

@@ -37,7 +37,6 @@ from utils.trainer import training
 
 logger = log.create_logger('ActivityResearch', level=logging.DEBUG)
 
-
 # Other type from type name to int label
 LABEL_OTHER = LABEL_DAILY + LABEL_OTHER_SPORTS
 LABEL_BRISKING = ['BriskWalkInDoor', 'BriskWalkOutSide', 'SlowWalk']
@@ -47,24 +46,26 @@ LABEL_ROWING = ['RowingMachine']
 LABEL_ELLIPTICAL = ['EllipticalMachine']
 
 LABEL_IN_USE = LABEL_OTHER + LABEL_BRISKING + LABEL_RUNNING + LABEL_BIKING + LABEL_ROWING + LABEL_ELLIPTICAL
-LABEL_IN_USE_INDEX = [LABEL_ITEMS_INDEX_DICT.get(name) for name in LABEL_IN_USE]
+LABEL_IN_USE_INDEX = [
+    LABEL_ITEMS_INDEX_DICT.get(name) for name in LABEL_IN_USE
+]
 
 # Map the origin index to activity type for model training
-LABEL_ACTIVITY_NAME_MAP = [LABEL_OTHER, LABEL_BRISKING, LABEL_RUNNING, LABEL_BIKING, LABEL_ROWING, LABEL_ELLIPTICAL]
+LABEL_ACTIVITY_NAME_MAP = [
+    LABEL_OTHER, LABEL_BRISKING, LABEL_RUNNING, LABEL_BIKING, LABEL_ROWING,
+    LABEL_ELLIPTICAL
+]
 LABEL_ACTIVITY_TYPE_MAP = []
 for label in LABEL_ACTIVITY_NAME_MAP:
-    LABEL_ACTIVITY_TYPE_MAP.append([LABEL_ITEMS_INDEX_DICT.get(name) for name in label])
+    LABEL_ACTIVITY_TYPE_MAP.append(
+        [LABEL_ITEMS_INDEX_DICT.get(name) for name in label])
 
-ACTIVITY_TYPE_NAME = ['Other', 'Walking', 'Running', 'Biking', 'RowingMachine', 'EllipticalMachine']
+ACTIVITY_TYPE_NAME = [
+    'Other', 'Walking', 'Running', 'Biking', 'RowingMachine',
+    'EllipticalMachine'
+]
 ACTIVITY_TYPE = [i for i in range(len(ACTIVITY_TYPE_NAME))]
-ACTIVITY_TYPE_WEIGHT = {
-    0: 1,
-    1: 1,
-    2: 1,
-    3: 1,
-    4: 3,
-    5: 1
-}
+ACTIVITY_TYPE_WEIGHT = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 1}
 ACTIVITY_TYPE_NAME_COLORS = {
     'Other': 'r',
     'Walking': 'g',
@@ -142,7 +143,9 @@ def try_the_best(train_x, train_y, test_x, test_y, record_dir=None):
                                                     test_size=0.3,
                                                     random_state=42)
     # model = KNeighborsClassifier(n_neighbors=10)
-    model = DecisionTreeClassifier(max_depth=10, max_features='auto', class_weight=ACTIVITY_TYPE_WEIGHT)
+    model = DecisionTreeClassifier(max_depth=10,
+                                   max_features='auto',
+                                   class_weight=ACTIVITY_TYPE_WEIGHT)
     # model = LogisticRegression()
     # model = SVC()
     for i in ACTIVITY_TYPE:
@@ -159,7 +162,9 @@ def try_the_best(train_x, train_y, test_x, test_y, record_dir=None):
     cm = confusion_matrix(y_true=test_y, y_pred=predicted)
 
     # plotting.plot_confusion_matrix(cm, SWIMMING_LABELS, True, title='SwimTCN')
-    plotting.pretty_plot_confusion_matrix(cm, ACTIVITY_TYPE_NAME, title='Activity-DT')
+    plotting.pretty_plot_confusion_matrix(cm,
+                                          ACTIVITY_TYPE_NAME,
+                                          title='Activity-DT')
     plt.show()
 
     # feat_names = []
@@ -202,7 +207,8 @@ def feature_extract(data_x):
         feat.append(x.std(axis=0))
         feat.append(x.sum(axis=0, where=x > 0))
         feat.append(-x.sum(axis=0, where=x < 0))
-        ratio = np.asarray([mean[0] / mean[1], mean[0] / mean[2], mean[1] / mean[2]])
+        ratio = np.asarray(
+            [mean[0] / mean[1], mean[0] / mean[2], mean[1] / mean[2]])
         feat.append(ratio)
         zc = np.where(np.diff(np.sign(x)))[0]
         sum1 = np.sum(x > 0)
@@ -220,10 +226,14 @@ def transform_labels(data_x, data_y):
     for i, name in enumerate(LABEL_ITEMS):
         num_of_type = np.sum(used_y == i)
         if num_of_type > 0:
-            print(f'win data num for type: {i:02d}:{name:<17} is {num_of_type:04d}')
+            print(
+                f'win data num for type: {i:02d}:{name:<17} is {num_of_type:04d}'
+            )
     type_masks = []
     for i, map_type in enumerate(LABEL_ACTIVITY_TYPE_MAP):
-        print(f'MAP label type: {map_type} as Activity type: {i}:{ACTIVITY_TYPE_NAME[i]}')
+        print(
+            f'MAP label type: {map_type} as Activity type: {i}:{ACTIVITY_TYPE_NAME[i]}'
+        )
         type_masks.append(np.isin(used_y, map_type))
     for i, mask in enumerate(type_masks):
         used_y[mask] = i
@@ -238,7 +248,8 @@ def custom_normalize(data_x):
     return data
 
 
-def load_raw_data_and_extract_feature(x_file, y_file, x_feat_file, y_feat_file):
+def load_raw_data_and_extract_feature(x_file, y_file, x_feat_file,
+                                      y_feat_file):
     print(f'\nProcessing x_file: {x_file}')
     print(f'Processing y_file: {y_file}')
     data_x = np.load(x_file)
@@ -266,11 +277,11 @@ def load_train_test_data(force=False):
         test_y = np.load(FEAT_Y_FILE_TEST)
     else:
         train_x, train_y = load_raw_data_and_extract_feature(
-            DATA_X_FILE_TRAIN, DATA_Y_FILE_TRAIN,
-            FEAT_X_FILE_TRAIN, FEAT_Y_FILE_TRAIN)
+            DATA_X_FILE_TRAIN, DATA_Y_FILE_TRAIN, FEAT_X_FILE_TRAIN,
+            FEAT_Y_FILE_TRAIN)
         test_x, test_y = load_raw_data_and_extract_feature(
-            DATA_X_FILE_TEST, DATA_Y_FILE_TEST,
-            FEAT_X_FILE_TEST, FEAT_Y_FILE_TEST)
+            DATA_X_FILE_TEST, DATA_Y_FILE_TEST, FEAT_X_FILE_TEST,
+            FEAT_Y_FILE_TEST)
     return train_x, test_x, train_y, test_y
 
 
@@ -297,7 +308,9 @@ def train(record_dir=None, force=False, USE_ML=True):
 
         x, y = train_x, train_y
         seed = 42
-        k_fold = model_selection.KFold(n_splits=10, shuffle=True, random_state=seed)
+        k_fold = model_selection.KFold(n_splits=10,
+                                       shuffle=True,
+                                       random_state=seed)
         lr(x, y, k_fold)
         lda(x, y, k_fold)
         knn(x, y, k_fold)
@@ -329,7 +342,7 @@ def predicted_result_smooth(predicted_results):
     is_stabled = False
     stable_y = 0
     win = []
-    stat = np.zeros((len(ACTIVITY_TYPE),))
+    stat = np.zeros((len(ACTIVITY_TYPE), ))
     for y in predicted_results:
         # Logic 1
         win.append(y)
@@ -368,12 +381,15 @@ def predicted_result_smooth(predicted_results):
     return np.asarray(smoothed)
 
 
-def evaluate_record_with_model(model, record_dir: Path, win_size=200, stride=25):
+def evaluate_record_with_model(model,
+                               record_dir: Path,
+                               win_size=200,
+                               stride=25):
     ts, data, label = load_sensor_data_and_labels_by_name(record_dir)
     data_x = []
     data_x_index = []
     for i in range(0, len(data) - win_size, stride):
-        data_x.append(data[i: i + win_size])
+        data_x.append(data[i:i + win_size])
         data_x_index.append(i + win_size)
     data_x = np.asarray(data_x)
 
@@ -398,9 +414,17 @@ def evaluate_record_with_model(model, record_dir: Path, win_size=200, stride=25)
     plt.title(record_dir.name)
     plt.plot(data)
     plt.subplot(212, sharex=ax1)
-    plt.plot(data_x_index, predicted_labels, '-or', label='predicted decision tree', markersize=3)
+    plt.plot(data_x_index,
+             predicted_labels,
+             '-or',
+             label='predicted decision tree',
+             markersize=3)
     # plt.plot(data_x_index, smoothed_labels, '-og', label='smoothed', markersize=3)
-    plt.plot(data_x_index, predicted_labels_cnn, '-ob', label='predicted cnn', markersize=3)
+    plt.plot(data_x_index,
+             predicted_labels_cnn,
+             '-ob',
+             label='predicted cnn',
+             markersize=3)
     # plt.plot(data_y, '-o', label='actual')
     plt.legend(loc='upper right')
     plt.grid()
@@ -415,7 +439,12 @@ def evaluate_record(record_dir: Path, win_size=200, stride=25):
 
 
 class ActivityCNN(nn.Module):
-    def __init__(self, seq_len=90, in_ch=6, hidden_ch=20, out_ch=6, dropout_ratio=0.1):
+    def __init__(self,
+                 seq_len=90,
+                 in_ch=6,
+                 hidden_ch=20,
+                 out_ch=6,
+                 dropout_ratio=0.1):
         """
         :param seq_len:    输入序列长度
         :param in_ch:      输入channel
@@ -429,7 +458,11 @@ class ActivityCNN(nn.Module):
 
         stride = 6
         kernel_size = 6
-        self.conv1 = nn.Conv1d(in_ch, hidden_ch, kernel_size=kernel_size, stride=stride, padding=0)
+        self.conv1 = nn.Conv1d(in_ch,
+                               hidden_ch,
+                               kernel_size=kernel_size,
+                               stride=stride,
+                               padding=0)
         logger.debug(f'conv1 weight shape: {self.conv1.weight.shape}')
         self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout_ratio)
@@ -439,14 +472,22 @@ class ActivityCNN(nn.Module):
         logger.debug(f'conv1 output seq len: {self.out_len1}')
 
         kernel_size = 3
-        self.conv2 = nn.Conv1d(hidden_ch, hidden_ch, kernel_size, stride=2, dilation=1)
+        self.conv2 = nn.Conv1d(hidden_ch,
+                               hidden_ch,
+                               kernel_size,
+                               stride=2,
+                               dilation=1)
         logger.debug(f'conv2 weight shape: {self.conv2.weight.shape}')
         self.relu2 = nn.ReLU()
         self.dropout2 = nn.Dropout(dropout_ratio)
         self.out_len2 = (self.out_len1 - kernel_size) // 2 + 1
         logger.debug(f'conv2 output seq len: {self.out_len2}')
 
-        self.conv3 = nn.Conv1d(hidden_ch, hidden_ch, kernel_size, stride=2, dilation=1)
+        self.conv3 = nn.Conv1d(hidden_ch,
+                               hidden_ch,
+                               kernel_size,
+                               stride=2,
+                               dilation=1)
         logger.debug(f'conv3 weight shape: {self.conv3.weight.shape}')
         self.relu3 = nn.ReLU()
         self.dropout3 = nn.Dropout(dropout_ratio)
@@ -454,7 +495,11 @@ class ActivityCNN(nn.Module):
         logger.debug(f'conv3 output seq len: {self.out_len3}')
 
         k4 = 3
-        self.conv4 = nn.Conv1d(hidden_ch, out_ch, kernel_size=k4, stride=2, dilation=1)
+        self.conv4 = nn.Conv1d(hidden_ch,
+                               out_ch,
+                               kernel_size=k4,
+                               stride=2,
+                               dilation=1)
         logger.debug(f'conv4 weight shape: {self.conv4.weight.shape}')
         self.out_len = (self.out_len3 - 1 * (k4 - 1) - 1) // 2 + 1
         logger.debug(f'conv4 output seq len: {self.out_len}')
@@ -507,13 +552,22 @@ def calculate_weights(y, type_num):
     return w.min() / w
 
 
-def start_training(train_x, train_y, test_x, test_y, model_path, cv_size=0.1, random_state=42):
+def start_training(train_x,
+                   train_y,
+                   test_x,
+                   test_y,
+                   model_path,
+                   cv_size=0.1,
+                   random_state=42):
     # Shuffle
     train_x, train_y = shuffle(train_x, train_y, random_state=random_state)
     test_x, test_y = shuffle(test_x, test_y, random_state=random_state)
 
     # Split cv set from train set
-    train_x, cv_x, train_y, cv_y = train_test_split(train_x, train_y, test_size=cv_size, random_state=random_state,
+    train_x, cv_x, train_y, cv_y = train_test_split(train_x,
+                                                    train_y,
+                                                    test_size=cv_size,
+                                                    random_state=random_state,
                                                     stratify=train_y)
     # Shift and balance training data set
     # train_x, train_y = load_training_data_post_process(train_x, train_y, enable_shift=False, do_balance=True)
@@ -554,8 +608,15 @@ def start_training(train_x, train_y, test_x, test_y, model_path, cv_size=0.1, ra
 
     data = train_x, train_y, cv_x, cv_y, test_x, test_y, norm
 
-    training(data, model, optimizer, criterion, batch_size, epochs, model_path,
-             cm_labels=cm_labels, cm_names=cm_names)
+    training(data,
+             model,
+             optimizer,
+             criterion,
+             batch_size,
+             epochs,
+             model_path,
+             cm_labels=cm_labels,
+             cm_names=cm_names)
 
 
 @click.command()

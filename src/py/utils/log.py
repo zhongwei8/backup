@@ -5,7 +5,6 @@
 
 import logging
 
-
 DEFAULT_FORMAT = '%(asctime)s/%(name)s/%(levelname)s: %(message)s'
 
 
