@@ -15,5 +15,5 @@ trigger-downstream:
     UPSTREAM_BRANCH: $CI_COMMIT_REF_NAME
   trigger:
     project: miot-algorithm/miot-sensing-algorithms
-    branch: chore-add-ci
+    branch: master
     strategy: depend
