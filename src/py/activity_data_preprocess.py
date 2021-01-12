@@ -3,6 +3,7 @@
 # @Author: Farmer Li
 # @Date: 2021-01-04
 
+import multiprocessing as mp
 from pathlib import Path
 
 import click
@@ -33,7 +34,10 @@ HEADER_NAMES_TYPE = dict(zip(HEADER_NAMES, HEADER_TYPES))
 
 SENSOR_TIMESTAMP_NS_ERROR_MAX = 3000_000  # 3ms
 
-DATASET_TO_USE = ['20201205-20201211']
+DATASET_TO_USE = [
+    '20201117-20201204', '20201205-20201211', '20201217-20201231',
+    '20210101-20210107'
+]
 
 
 def get_activity_type_name_by_record_name(record_name: str):
@@ -148,37 +152,71 @@ def align_one_record(record_dir: Path, debug=False):
     acc_file = record_dir / f'{record_dir.name}-{ACC_SUFFIX}'
     gyro_file = record_dir / f'{record_dir.name}-{GYRO_SUFFIX}'
     magnet_file = record_dir / f'{record_dir.name}-{MAGNET_SUFFIX}'
+    # print(f'Acc file: {acc_file}')
+    # print(f'Gyro file: {gyro_file}')
+    # print(f'Magnet file: {magnet_file}')
 
-    acc = pd.read_csv(acc_file).values
-    gyro = pd.read_csv(gyro_file).values
-    mag = pd.read_csv(magnet_file).values
+    if acc_file.exists() and gyro_file.exists() and magnet_file.exists():
+        try:
+            acc = pd.read_csv(acc_file).values
+            gyro = pd.read_csv(gyro_file, ).values
+            gyro = gyro[:-1]
+            mag = pd.read_csv(magnet_file).values
+            mag = mag[:-1]
+        except pd.errors.ParserError as e:
+            print(f'Error: {e}')
+            return None
+        acc = pd.read_csv(acc_file).values
+        gyro = pd.read_csv(gyro_file).values
+        mag = pd.read_csv(magnet_file).values
 
-    aligned = align_sensor_data(acc, gyro, mag)
-    if debug:
-        plt.figure('Align check: axis x')
-        plt.title(record_dir.name)
-        ax1 = plt.subplot(311)
-        plt.title('acc x')
-        plot_aligned_data(acc.T[2], aligned.T[2], 'origin', 'aligned')
-        plt.subplot(312, sharex=ax1)
-        plt.title('gyro x')
-        plot_aligned_data(gyro.T[2], aligned.T[5], 'origin', 'aligned')
-        plt.subplot(313, sharex=ax1)
-        plt.title('mag x')
-        plot_aligned_data(mag.T[2], aligned.T[8], 'origin', 'aligned')
-        plt.show()
+        aligned = align_sensor_data(acc, gyro, mag)
+        if debug:
+            plt.figure('Align check: axis x')
+            plt.title(record_dir.name)
+            ax1 = plt.subplot(311)
+            plt.title('acc x')
+            plot_aligned_data(acc.T[2], aligned.T[2], 'origin', 'aligned')
+            plt.subplot(312, sharex=ax1)
+            plt.title('gyro x')
+            plot_aligned_data(gyro.T[2], aligned.T[5], 'origin', 'aligned')
+            plt.subplot(313, sharex=ax1)
+            plt.title('mag x')
+            plot_aligned_data(mag.T[2], aligned.T[8], 'origin', 'aligned')
+            plt.show()
 
-    return aligned
+        return aligned
+    else:
+        return None
 
 
-def align_and_relabel_one_record(record_dir: Path, dst_dir: Path, debug=False):
-    print(f'\nProcessing record: {record_dir}')
+def align_and_relabel_one_record(record_dir: Path,
+                                 dst_dir: Path,
+                                 sample_rate=26,
+                                 debug=False):
+    dst_file = None
+    if dst_dir is not None:
+        activity_type = get_activity_type_name_by_record_name(record_dir.name)
+        dst_file = dst_dir / f'{activity_type}-{record_dir.name}.csv'
+    # if dst_file is not None and dst_file.exists():
+    #     print('Record processed, skipping...')
+    #     return
+
+    # print(f'\nProcessing record: {record_dir}')
     label_file = record_dir / f'{record_dir.name}-{LABEL_SUFFIX}'
     if not label_file.exists():
         print('Label file not exists, skipped!')
         return None
 
     aligned = align_one_record(record_dir, debug)
+    if aligned is None:
+        return None
+    if sample_rate == 52:
+        pass
+    elif sample_rate == 26:
+        aligned = aligned[::2]
+    else:
+        raise RuntimeError('Unsupported sample rate, must be one of [26, 52]')
     aligned_ts = aligned[:, 1]
 
     # Load label result
@@ -191,18 +229,23 @@ def align_and_relabel_one_record(record_dir: Path, dst_dir: Path, debug=False):
 
     labeled = np.hstack((aligned, y))
     df = pd.DataFrame(data=labeled, columns=HEADER_NAMES)
-    df = df.astype(HEADER_NAMES_TYPE)
+    try:
+        df = df.astype(HEADER_NAMES_TYPE)
+    except ValueError as e:
+        print(f'Convert type error: {e}')
+        return
 
-    if dst_dir is not None:
+    if dst_file is not None:
         activity_type = get_activity_type_name_by_record_name(record_dir.name)
         dst_file = dst_dir / f'{activity_type}-{record_dir.name}.csv'
         print(f'Saving to file: {dst_file}')
         df.to_csv(dst_file, index=False)
 
-    return df
 
-
-def align_and_relabel_datasets(data_dir: Path, save_dir: Path, dataset_names):
+def align_and_relabel_datasets(data_dir: Path,
+                               save_dir: Path,
+                               dataset_names,
+                               sample_rate=26):
     datasets = [data_dir / name for name in dataset_names]
     set_num = len(datasets)
     for i, dataset in enumerate(datasets, 1):
@@ -222,7 +265,7 @@ def align_and_relabel_datasets(data_dir: Path, save_dir: Path, dataset_names):
             for k, record in enumerate(records, 1):
                 print(f'\nProcessing record [{k:02d}/{record_num:02d}]: '
                       f'{record.name}')
-                align_and_relabel_one_record(record, type_dir)
+                align_and_relabel_one_record(record, type_dir, sample_rate)
 
 
 @click.command()

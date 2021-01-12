@@ -1,0 +1,15 @@
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/../include/har)
+
+add_library(har_detector_c har_detector.c)
+
+if(HOST)
+  set_target_properties(har_detector_c PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+  message("build har_detector for python interface")
+  find_package(PythonLibs 3.5 REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  find_package(pybind11)
+  pybind11_add_module(har_detector har_detector_python.cc)
+  set_target_properties(har_detector PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+  target_link_libraries(har_detector PRIVATE har_detector_c)
+endif()

@@ -85,11 +85,11 @@ class MetaType(Enum):
 def label_convert_ts2index(labels_ts, ts_arr):
     labels_index = []
     max_idx = len(ts_arr) - 1
-    print(f'TS range: {ts_arr[0]} - {ts_arr[-1]}, Total len: {max_idx + 1}')
+    # print(f'TS range: {ts_arr[0]} - {ts_arr[-1]}, Total len: {max_idx + 1}')
     for t, s, e in labels_ts:
-        print(f'Finding TS label {t}: {s} - {e}')
+        # print(f'Finding TS label {t}: {s} - {e}')
         if s > ts_arr[-1] or e < ts_arr[0]:
-            print(f'TS has not match: {s} > {ts_arr[-1]} or {e} < {ts_arr[0]}')
+            # print(f'TS not match: {s} > {ts_arr[-1]} or {e} < {ts_arr[0]}')
             continue
         start_index = -1
         end_index = -1
@@ -103,7 +103,7 @@ def label_convert_ts2index(labels_ts, ts_arr):
                     break
         if end_index < 0:
             end_index = max_idx
-        print(f'Found INDEX label {t}: {start_index} - {end_index}')
+        # print(f'Found INDEX label {t}: {start_index} - {end_index}')
         labels_index.append((t, start_index, end_index))
     return labels_index
 
@@ -113,7 +113,7 @@ def load_label_result(label_file: Path):
     with label_file.open('r') as f:
         for line in f:
             line = line.rstrip('\n')
-            labels.append(tuple(map(int, line.split('_'))))
+            labels.append(tuple(map(int, (map(float, line.split('_'))))))
     return labels
 
 
