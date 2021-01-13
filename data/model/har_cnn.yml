@@ -1,0 +1,24 @@
+library_name: har_cnn
+target_abis: [host]
+model_graph_format: file
+model_data_format: file
+models:
+  har_cnn:
+    platform: tensorflow
+    model_file_path: /home/liutuo/workspace/sensor-project/sensor-algorithms/har/model/har_cnn.pb
+    model_sha256_checksum: 591356deddf55f5c40f9b9a1efdad7249c822e65d372a39c2f7a4494db577992
+    subgraphs:
+      - input_tensors:
+          - conv1d_7_input
+        input_shapes:
+          - 1,208,4
+        output_tensors:
+          - dense_3/Softmax
+        output_shapes:
+          - 1,6
+    runtime: cpu
+    data_type: fp32_fp32
+    limit_opencl_kernel_time: 0
+    nnlib_graph_mode: 0
+    obfuscate: 0
+    winograd: 0

@@ -1,0 +1,17 @@
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/../include/har)
+
+include_directories(./)
+add_library(har_model_c har_model.c)
+
+if(HOST)
+  LINK_DIRECTORIES(../../../../../dnn_model_libs_host/)
+  target_link_libraries(har_model_c PRIVATE libmicro.a libhar_cnn.a)
+  find_package(PythonLibs 3.5 REQUIRED)
+  set_target_properties(har_model_c PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  find_package(pybind11)
+  pybind11_add_module(har_model har_model_python.cc)
+  set_target_properties(har_model PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+  target_link_libraries(har_model PRIVATE har_model_c libmicro.a libhar_cnn.a)
+endif()
