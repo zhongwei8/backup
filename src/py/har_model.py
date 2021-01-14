@@ -10,14 +10,14 @@ import os, sys
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.join(cur_dir, "../../../../../")
 sys.path.append(root_dir)
-from masl_public.utils.base import SensorAlgo
+from depolyment.utils.base import SensorAlgo
 
 
 class HarModel(SensorAlgo):
     """ Class for counting steps with accelerate data """
     def __init__(
             self,
-            model_file='src/masl_sports/har/data/model/weights.best-0615.hdf5',
+            model_file='src/sports/activity-recognition/data/model/weights.best-0615.hdf5',
             win_len=8.0,
             shift=2.0,
             channel=4,
@@ -29,9 +29,11 @@ class HarModel(SensorAlgo):
         self._model = load_model(model_file, compile=False)
         self._algo_name = 'HarModel'
 
-        self._input_names = ['EventTimestamp', 'AccelX', 'AccelY', 'AccelZ']
+        self._input_names = [
+            'EventTimestamp(ns)', 'AccelX', 'AccelY', 'AccelZ'
+        ]
         self._output_names = [
-            'EventTimestamp', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
+            'EventTimestamp(ns)', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
             'Prob5', 'Predict'
         ]
 
@@ -66,7 +68,7 @@ class HarModel(SensorAlgo):
 
     def feed_data(self, data_point):
         """ main function processes data and count steps"""
-        self._cur_timestamp = data_point['EventTimestamp']
+        self._cur_timestamp = data_point['EventTimestamp(ns)']
         acc_x = data_point['AccelX']
         acc_y = data_point['AccelY']
         acc_z = data_point['AccelZ']
@@ -101,7 +103,7 @@ class HarModel(SensorAlgo):
 
     def get_result(self):
         return {
-            'EventTimestamp': self._cur_timestamp,
+            'EventTimestamp(ns)': self._cur_timestamp,
             'Prob0': self._probs[0],
             'Prob1': self._probs[1],
             'Prob2': self._probs[2],
