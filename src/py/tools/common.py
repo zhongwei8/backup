@@ -169,7 +169,7 @@ def load_dataset(input_dir,
                  lp_filter=False):
     data_x = []
     data_y = []
-    for file_path in Path(input_dir).glob('*.csv'):
+    for file_path in Path(input_dir).rglob('*.csv'):
         x, y = load_data_file(file_path, fs, downsample, duration, shift,
                               use_amp, filter_outlier, lp_filter)
         data_x.extend(x)
@@ -189,6 +189,7 @@ def load_data_file(file_path,
                    lp_filter=False):
     df = pd.read_csv(file_path, usecols=DATA_NAMES_TO_USE)
     data = df.values
+    dest_fs = fs
     if downsample > 1:
         dest_fs = fs // downsample
         data = data[::downsample]
