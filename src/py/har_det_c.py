@@ -3,13 +3,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+import sys
+
 import numpy as np
-import sys, os
+
+from depolyment.utils.base import SensorAlgo
+
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.join(cur_dir, "../../../../../")
 sys.path.append(root_dir)
-from masl_public.utils.base import SensorAlgo
-import masl_sports.har.src.c.har_detector.har_detector as CHarDetector
+import sports.har.src.c.har_detector.har_detector as CHarDetector
 
 
 class HarDetector_C(SensorAlgo):

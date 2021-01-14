@@ -8,11 +8,12 @@ import sys
 
 import numpy as np
 
+from depolyment.utils.base import SensorAlgo
+
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.join(cur_dir, "../../../../../")
 sys.path.append(root_dir)
-from masl_public.utils.base import SensorAlgo
-import masl_sports.har.src.c.har_model.har_model as CHarModel
+import sports.har.src.c.har_model.har_model as CHarModel
 
 
 class HarModel_C(SensorAlgo):

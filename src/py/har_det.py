@@ -8,7 +8,7 @@ import os, sys
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.join(cur_dir, "../../../../../")
 sys.path.append(root_dir)
-from masl_public.utils.base import SensorAlgo
+from depolyment.utils.base import SensorAlgo
 from enum import Enum, unique
 
 
@@ -51,10 +51,10 @@ class HarDetector(SensorAlgo):
         self._vote_len = vote_len
         self._num_classes = num_classes
         self._input_names = [
-            'EventTimestamp', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
+            'EventTimestamp(ns)', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
             'Prob5'
         ]
-        self._output_names = ['EventTimestamp', 'PredictActivity']
+        self._output_names = ['EventTimestamp(ns)', 'PredictActivity']
         self._algo_name = 'HarDetector'
         self._cur_timestamp = 0
 
@@ -105,7 +105,7 @@ class HarDetector(SensorAlgo):
 
     def feed_data(self, data_point):
         probs = np.zeros(self._num_classes)
-        self._cur_timestamp = data_point['EventTimestamp']
+        self._cur_timestamp = data_point['EventTimestamp(ns)']
         probs[0] = data_point['Prob0']
         probs[1] = data_point['Prob1']
         probs[2] = data_point['Prob2']
@@ -121,7 +121,7 @@ class HarDetector(SensorAlgo):
 
     def get_result(self):
         return {
-            'EventTimestamp': self._cur_timestamp,
+            'EventTimestamp(ns)': self._cur_timestamp,
             'PredictActivity': self._activity,
         }
 
@@ -140,10 +140,10 @@ class HarDetectorFSM(HarDetector):
         self._start_prepare_ts = 0
         self._start_break_ts = 0
         self._input_names = [
-            'EventTimestamp', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
+            'EventTimestamp(ns)', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
             'Prob5'
         ]
-        self._output_names = ['EventTimestamp', 'PredictActivity']
+        self._output_names = ['EventTimestamp(ns)', 'PredictActivity']
         self._algo_name = 'HarDetectorFSM'
         self._cur_timestamp = 0
         if threds is None or len(threds) < num_classes:
