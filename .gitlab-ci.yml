@@ -1,12 +1,10 @@
 image: cr.d.xiaomi.net/miot-algorithm/devel:latest
 
-
 stages:
   - downstream
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-
 
 trigger-downstream:
   stage: downstream
