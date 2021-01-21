@@ -166,9 +166,6 @@ def align_one_record(record_dir: Path, debug=False):
         except pd.errors.ParserError as e:
             print(f'Error: {e}')
             return None
-        acc = pd.read_csv(acc_file).values
-        gyro = pd.read_csv(gyro_file).values
-        mag = pd.read_csv(magnet_file).values
 
         aligned = align_sensor_data(acc, gyro, mag)
         if debug:
@@ -276,6 +273,7 @@ def main(data_dir, save_dir):
         save_dir = Path(save_dir)
         align_and_relabel_datasets(Path(data_dir), save_dir, DATASET_TO_USE)
     else:
+        align_and_relabel_one_record(Path(data_dir), Path('./'))
         print('Must set save dir by "-s or --save-dir"')
 
 
