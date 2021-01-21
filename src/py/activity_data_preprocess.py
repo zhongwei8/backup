@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from activity_data_labeler import label_convert_ts2index
-from activity_data_labeler import load_label_result
+from activity_data_labeler import label_convert_ts2index, load_label_result
 
 ACC_SUFFIX = 'accel-52HZ.csv'
 GYRO_SUFFIX = 'gyroscope-52HZ.csv'
@@ -159,6 +158,7 @@ def align_one_record(record_dir: Path, debug=False):
     if acc_file.exists() and gyro_file.exists() and magnet_file.exists():
         try:
             acc = pd.read_csv(acc_file).values
+            acc = acc[:-1]
             gyro = pd.read_csv(gyro_file, ).values
             gyro = gyro[:-1]
             mag = pd.read_csv(magnet_file).values

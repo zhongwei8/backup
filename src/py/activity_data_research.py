@@ -9,15 +9,13 @@ from pathlib import Path
 import click
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import signal
 import pandas as pd
+from scipy import signal
 
-from activity_data_labeler import LABEL_ITEMS
-from activity_data_labeler import LABEL_ITEMS_INDEX_DICT
-from activity_data_labeler import LABEL_DAILY
-from activity_data_labeler import LABEL_OTHER_SPORTS
-from activity_data_labeler import label_convert_ts2index
-from activity_data_labeler import load_label_result
+from activity_data_labeler import (LABEL_DAILY, LABEL_ITEMS,
+                                   LABEL_ITEMS_INDEX_DICT, LABEL_OTHER_SPORTS,
+                                   label_convert_ts2index, load_label_result)
+from utils.common import ewma
 from utils.log import Log
 
 ACC_SUFFIX = 'accel-52HZ.csv'
@@ -277,7 +275,7 @@ def process_one_record(record_dir: Path):
     plt.legend()
     for (t, start, end) in labels_index_magnet:
         plt.axvspan(start, end, ymin=0, ymax=0.8, alpha=0.5)
-    plt.tight_layout()
+    # plt.tight_layout()
     # plt.show()
 
     # p1. Process exception points
@@ -300,6 +298,7 @@ def process_one_record(record_dir: Path):
     # plt.show()
 
     acc_lp = signal.filtfilt(b, a, acc_re)
+    acc_ewma = ewma(acc_re.T).T
     acc_body = acc_re - acc_lp
     tan = -acc_lp[1] / acc_lp[0]
     tan_angle = np.rad2deg(np.arctan(tan))
@@ -310,6 +309,7 @@ def process_one_record(record_dir: Path):
     plt.plot(acc_data.T[0], '--', label='raw')
     plt.plot(acc_re[0], '-', label='remove exceptions')
     plt.plot(acc_lp[0], '-', label='low pass')
+    plt.plot(acc_ewma[0], '-', label='acc_ewma')
     plt.plot(acc_body[0], '-', label='BA')
     # plt.plot(tan_angle, '-', label='arctan y/x')
     plt.legend()
@@ -318,6 +318,7 @@ def process_one_record(record_dir: Path):
     plt.plot(acc_data.T[1], '--', label='raw')
     plt.plot(acc_re[1], '-', label='remove exceptions')
     plt.plot(acc_lp[1], '-', label='low pass')
+    plt.plot(acc_ewma[1], '-', label='acc_ewma')
     plt.plot(acc_body[1], '-', label='BA')
     plt.legend()
     plt.subplot(413, sharex=ax1, sharey=ax1)
@@ -325,13 +326,14 @@ def process_one_record(record_dir: Path):
     plt.plot(acc_data.T[2], '--', label='raw')
     plt.plot(acc_re[2], '-', label='remove exceptions')
     plt.plot(acc_lp[2], '-', label='low pass')
+    plt.plot(acc_ewma[2], '-', label='acc_ewma')
     plt.plot(acc_body[2], '-', label='BA')
     plt.legend()
     plt.subplot(414, sharex=ax1)
     plt.title('arctan -y/x')
     plt.plot(tan_angle, '-', label='arctan -y/x')
     plt.legend()
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()
 
 
@@ -342,8 +344,6 @@ def main(ctx, data_dir):
     ctx.obj['data_dir'] = Path(data_dir)
     if ctx.invoked_subcommand is None:
         data_dir = Path(data_dir)
-        if data_dir.is_file():
-            data_dir = data_dir.parent
         process_one_record(data_dir)
 
 
