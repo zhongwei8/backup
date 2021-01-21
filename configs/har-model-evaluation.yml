@@ -1,0 +1,14 @@
+name: har-detector-evaluation
+type: evaluation
+dataset:
+  name: MIOT-2020Q4-test
+  path: https://cnbj1.fds.api.xiaomi.com/new-sensor-bucket/sensor-data/activity-recognition/clean/MIOT-2020Q4-test.zip
+  sha256sum: cb2a9a999d4e9fb7dba4335449ef5941c449e6417443670e17c33172ffd8f4bc
+algos:
+  har_model:
+    module: activity-recognition.src.py.har_model
+    name: HarModel
+metric:
+  har_model_metric:
+    module: metrics.har.har_metrics
+    name: HarModelStreamMetric

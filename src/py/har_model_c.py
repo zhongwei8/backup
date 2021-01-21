@@ -1,19 +1,18 @@
 # Copyright (c) Xiaomi, 2020. All rights reserved.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import os
 import sys
 
 import numpy as np
 
-from depolyment.utils.base import SensorAlgo
-
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.join(cur_dir, "../../../../../")
+root_dir = os.path.join(cur_dir, "../../../../../ai-algorithm-depolyment")
 sys.path.append(root_dir)
 import sports.har.src.c.har_model.har_model as CHarModel
+
+from utils.base import SensorAlgo
 
 
 class HarModel_C(SensorAlgo):

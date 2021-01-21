@@ -1,6 +1,6 @@
 # Human Activity Recognition Time Series Classification
 
-文件目录：
+## 文件目录
 
 ```
 |---data // 训练好的模型文件，数据处理工具及数据标注工具。
@@ -40,11 +40,12 @@
 ```
 
 
-Download the dataset:
+## Download the dataset
 ```sh
 ./data/download_dataset.sh
 ```
 
+## Trainning
 Train the CNN model:
 ```sh
 python tools/train.py --type cnn \
@@ -59,4 +60,9 @@ python tools/train.py --type cnn \
 Monitoring training progress using tensorboard:
 ```sh
 tensorboard --logdir=logs
+```
+
+## Evaluation
+```sh
+python3 scripts/evaluate.py configs/har-model-evaluation.yml
 ```
