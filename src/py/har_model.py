@@ -1,29 +1,41 @@
 # Copyright (c) Xiaomi, 2020. All rights reserved.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import math
-import numpy as np
+from pathlib import Path
+import sys
+
 from keras.models import load_model
-import os, sys
-cur_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.join(cur_dir, "../../../../../")
-sys.path.append(root_dir)
-from depolyment.utils.base import SensorAlgo
+import numpy as np
+
+cur_dir = Path(__file__).parent.resolve()
+depolyment_dir = cur_dir / '../../../../../ai-algorithm-depolyment/'
+if depolyment_dir.exists():
+    sys.path.append(depolyment_dir)
+else:
+    depolyment_dir = cur_dir / '../../../ai-algorithm-depolyment/'
+    if depolyment_dir.exists():
+        sys.path.append(depolyment_dir)
+
+project_dir = depolyment_dir / 'ai-algorithm-depolyment'
+sys.path.append(depolyment_dir)
+
+# Import from ai-algorithm-depolyment repo
+# So this file dependent on ai-algorithm-depolyment
+from utils.base import SensorAlgo
 
 
 class HarModel(SensorAlgo):
     """ Class for counting steps with accelerate data """
-    def __init__(
-            self,
-            model_file='src/sports/activity-recognition/data/model/weights.best-0615.hdf5',
-            win_len=8.0,
-            shift=2.0,
-            channel=4,
-            num_classes=6,
-            fs=26,
-            type=0):
+    def __init__(self,
+                 model_file=cur_dir /
+                 '../../data/model/weights.best-0615.hdf5',
+                 win_len=8.0,
+                 shift=2.0,
+                 channel=4,
+                 num_classes=6,
+                 fs=26,
+                 type=0):
         self._version = 100000
 
         self._model = load_model(model_file, compile=False)

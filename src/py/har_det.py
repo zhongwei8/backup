@@ -1,15 +1,24 @@
 # Copyright (c) Xiaomi, 2020. All rights reserved.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from enum import Enum, unique
+from pathlib import Path
+import sys
 
 import numpy as np
-import os, sys
-cur_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.join(cur_dir, "../../../../../")
-sys.path.append(root_dir)
-from depolyment.utils.base import SensorAlgo
-from enum import Enum, unique
+
+cur_dir = Path(__file__).parent.resolve()
+root_dir = cur_dir / '../../../../../ai-algorithm-depolyment'
+if root_dir.exists():
+    sys.path.append(root_dir)
+else:
+    root_dir = cur_dir / '../../../ai-algorithm-depolyment'
+    if root_dir.exists():
+        sys.path.append(root_dir)
+
+# Import from ai-algorithm-depolyment repo
+# So this file dependent on ai-algorithm-depolyment
+from utils.base import SensorAlgo
 
 
 @unique
