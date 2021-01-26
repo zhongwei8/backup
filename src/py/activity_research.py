@@ -5,35 +5,35 @@
 
 import logging
 from pathlib import Path
+import pickle
 
 import click
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
+import onnxruntime
+import pandas as pd
 from sklearn import model_selection
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import normalize
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle
-from sklearn.preprocessing import normalize
+from tabulate import tabulate
 import torch
 from torch import nn
 
-from activity_data_labeler import LABEL_ITEMS
-from activity_data_labeler import LABEL_ITEMS_INDEX_DICT
-from activity_data_labeler import LABEL_DAILY
-from activity_data_labeler import LABEL_OTHER_SPORTS
+from activity_data_labeler import (LABEL_DAILY, LABEL_ITEMS,
+                                   LABEL_ITEMS_INDEX_DICT, LABEL_OTHER_SPORTS)
 from activity_data_research import load_sensor_data_and_labels_by_name
-from utils import log
-from utils import plotting
+from utils import log, plotting
+from utils.common import ewma, load_data_file, load_dataset
+from utils.model_utils import GeneralModelPredictor
 from utils.plotting import pretty_plot_confusion_matrix
-from utils.trainer import data_normalize
-from utils.trainer import normalize_data
-from utils.trainer import training
+from utils.trainer import data_normalize, normalize_data, training
 
 logger = log.create_logger('ActivityResearch', level=logging.DEBUG)
 
@@ -61,18 +61,17 @@ for label in LABEL_ACTIVITY_NAME_MAP:
         [LABEL_ITEMS_INDEX_DICT.get(name) for name in label])
 
 ACTIVITY_TYPE_NAME = [
-    'Other', 'Walking', 'Running', 'Biking', 'RowingMachine',
-    'EllipticalMachine'
+    "Others", "Walk", "Run", "Rowing", "Elliptical", "Biking"
 ]
 ACTIVITY_TYPE = [i for i in range(len(ACTIVITY_TYPE_NAME))]
 ACTIVITY_TYPE_WEIGHT = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 1}
 ACTIVITY_TYPE_NAME_COLORS = {
     'Other': 'r',
-    'Walking': 'g',
-    'Running': 'b',
-    'Biking': 'r',
-    'RowingMachine': 'g',
-    'EllipticalMachine': 'b'
+    'Walk': 'g',
+    'Runn': 'b',
+    'Rowing': 'g',
+    'Elliptical': 'b',
+    'Biking': 'r'
 }
 
 DATA_X_FILE = Path('../data/activity_data_x_raw.npy')
@@ -91,7 +90,8 @@ FEAT_X_FILE_TEST = Path('../data/activity_data_x_feat_test.npy')
 FEAT_Y_FILE_TEST = Path('../data/activity_data_y_feat_test.npy')
 
 MODEL_PATH = Path('./models/model-alpha.lr.mdl')
-CNN_MODEL_PATH = Path('./models/model-alpha.cnn.mdl')
+CNN_MODEL_PATH = Path('./models/model-cnn-20200125.pth')
+CNN_ONNX_MODEL_PATH = CNN_MODEL_PATH.with_suffix('.onnx')
 
 
 def evaluate(model, x, y, k_fold):
@@ -173,9 +173,6 @@ def try_the_best(train_x, train_y, test_x, test_y, record_dir=None):
     # # plt.figure(figsize=(600, 600))
     # tree.plot_tree(model, feature_names=feat_names, class_names=ACTIVITY_TYPE_NAME, node_ids=True, fontsize=6)
     # plt.show()
-
-    if record_dir is not None:
-        evaluate_record_with_model(model, record_dir)
 
 
 def feature_select(train_x, train_y):
@@ -298,12 +295,20 @@ def load_raw_train_test_data():
     return train_x, test_x, train_y, test_y
 
 
-def train(record_dir=None, force=False, USE_ML=True):
+def train(train_dir, test_dir, force=False, USE_ML=False):
+    fs = 26
+    # duration = 4.04  # int(4.04 * 26) = 105
+    duration = 8.08  # int(8.08 * 26) = 210
+    shift = 2
+    use_amp = False
+    filter_outlier = True
+    lp_filter = True
+    seed = 13
     if USE_ML:
         train_x, test_x, train_y, test_y = load_train_test_data(force=force)
         print(f'train x shape: {train_x.shape}')
         print(f'test  x shape: {test_x.shape}')
-        try_the_best(train_x, train_y, test_x, test_y, record_dir)
+        try_the_best(train_x, train_y, test_x, test_y, train_dir)
         return
 
         x, y = train_x, train_y
@@ -318,21 +323,27 @@ def train(record_dir=None, force=False, USE_ML=True):
         decision_tree(x, y, k_fold)
         svm(x, y, k_fold)
     else:
-        train_x, test_x, train_y, test_y = load_raw_train_test_data()
+        train_x, train_y = load_dataset(train_dir,
+                                        fs=fs,
+                                        duration=duration,
+                                        shift=shift,
+                                        use_amp=use_amp,
+                                        filter_outlier=filter_outlier,
+                                        lp_filter=lp_filter)
+        test_x, test_y = load_dataset(test_dir,
+                                      fs=fs,
+                                      duration=duration,
+                                      shift=shift,
+                                      use_amp=use_amp,
+                                      filter_outlier=filter_outlier,
+                                      lp_filter=lp_filter)
         print(f'train x shape: {train_x.shape}')
         print(f'test  x shape: {test_x.shape}')
 
-        # Down sample
-        train_x = train_x[:, ::2, :]
-        test_x = test_x[:, ::2, :]
-        train_x = train_x[:, :90, :]
-        test_x = test_x[:, :90, :]
-
-        print(f'Down sampled train x shape: {train_x.shape}')
-        print(f'Down sampled test  x shape: {test_x.shape}')
-
         model_path = CNN_MODEL_PATH
         start_training(train_x, train_y, test_x, test_y, model_path)
+        seq_len = int(duration * fs)
+        convert_model_to_onnx((1, 6, seq_len))
 
 
 def predicted_result_smooth(predicted_results):
@@ -381,61 +392,58 @@ def predicted_result_smooth(predicted_results):
     return np.asarray(smoothed)
 
 
-def evaluate_record_with_model(model,
-                               record_dir: Path,
-                               win_size=200,
-                               stride=25):
-    ts, data, label = load_sensor_data_and_labels_by_name(record_dir)
+def evaluate_single_file(file_path: Path, win_size=210, stride=52):
+    predictor = ActivityPredictor()
+    print(predictor.norm)
+    predictor_onnx = GeneralModelPredictor(str(CNN_ONNX_MODEL_PATH), 'onnx')
+    df = pd.read_csv(file_path)
+    labels = df['Activity'].values
+    data = df.values
+    acc = data[:, 2:5]
+    acc_lp = ewma(acc)
+    acc = np.hstack((acc, acc_lp))
+
     data_x = []
     data_x_index = []
-    for i in range(0, len(data) - win_size, stride):
-        data_x.append(data[i:i + win_size])
-        data_x_index.append(i + win_size)
-    data_x = np.asarray(data_x)
+    for i in range(0, len(acc) - 210, stride):
+        data_x_index.append(i + win_size // 2)
+        data_x.append(acc[i:i + win_size])
 
-    # data_x, data_y = load_and_split_data(record_dir)
-    print(f'test raw data x shape: {data_x.shape}')
-    feat_x = feature_extract(data_x)
-    feat_x = custom_normalize(feat_x)
-    print(f'test data x shape: {feat_x.shape}')
-    predicted = model.predict(feat_x)
-    predicted_labels = [ACTIVITY_TYPE_NAME[i] for i in predicted]
-    smoothed = predicted_result_smooth(predicted)
-    smoothed_labels = [ACTIVITY_TYPE_NAME[i] for i in smoothed]
-    print(f'model parameters: {model.get_params()}')
-
-    predictor = ActivityPredictor()
+    data_x = np.asarray(data_x).astype(np.float32)
     predicted_cnn = predictor.predict(data_x)
+    norm_x = predictor.normalize_data(data_x)
+    predicted_onnx = predictor_onnx.predict(norm_x)
+    print(predicted_onnx.shape)
+    predicted_onnx = np.argmax(np.squeeze(predicted_onnx), axis=1)
     predicted_labels_cnn = [ACTIVITY_TYPE_NAME[i] for i in predicted_cnn]
+    predicted_labels_onnx = [ACTIVITY_TYPE_NAME[i] for i in predicted_onnx]
 
+    labels_true = labels[data_x_index]
     plt.figure('An real case')
     plt.subplot(211)
     ax1 = plt.gca()
-    plt.title(record_dir.name)
-    plt.plot(data)
+    plt.title(file_path.stem)
+    plt.plot(acc[:, 0:3])
     plt.subplot(212, sharex=ax1)
-    plt.plot(data_x_index,
-             predicted_labels,
-             '-or',
-             label='predicted decision tree',
-             markersize=3)
-    # plt.plot(data_x_index, smoothed_labels, '-og', label='smoothed', markersize=3)
     plt.plot(data_x_index,
              predicted_labels_cnn,
              '-ob',
              label='predicted cnn',
              markersize=3)
+    plt.plot(data_x_index,
+             predicted_labels_onnx,
+             '-or',
+             label='predicted onnx',
+             markersize=3)
+    plt.plot(data_x_index,
+             labels_true,
+             '-og',
+             label='true label',
+             markersize=3)
     # plt.plot(data_y, '-o', label='actual')
     plt.legend(loc='upper right')
     plt.grid()
     plt.show()
-
-
-def evaluate_record(record_dir: Path, win_size=200, stride=25):
-    model = None
-    with MODEL_PATH.open('rb') as fm:
-        model = pickle.load(fm)
-    evaluate_record_with_model(model, record_dir)
 
 
 class ActivityCNN(nn.Module):
@@ -456,8 +464,8 @@ class ActivityCNN(nn.Module):
         # Normalize or standardize parameter
         self.norm = None
 
-        stride = 6
-        kernel_size = 6
+        stride = seq_len // 15
+        kernel_size = stride
         self.conv1 = nn.Conv1d(in_ch,
                                hidden_ch,
                                kernel_size=kernel_size,
@@ -514,7 +522,7 @@ class ActivityCNN(nn.Module):
 
 
 class ActivityPredictor:
-    def __init__(self, seq_len=200):
+    def __init__(self, seq_len=210):
         self.seq_len = seq_len
         self.model = ActivityCNN(seq_len=seq_len)
         state = torch.load(CNN_MODEL_PATH)
@@ -523,6 +531,11 @@ class ActivityPredictor:
         logger.info(f'Model norm param: {self.norm}')
         self.model.load_state_dict(state['state_dict'])
         self.model.eval()
+
+    def normalize_data(self, x):
+        test_x = normalize_data(x, self.norm)
+        test_x = np.transpose(test_x, (0, 2, 1))
+        return test_x
 
     def predict(self, x, return_prob=False):
         test_x = normalize_data(x, self.norm)
@@ -557,7 +570,7 @@ def start_training(train_x,
                    test_x,
                    test_y,
                    model_path,
-                   cv_size=0.1,
+                   cv_size=0.33,
                    random_state=42):
     # Shuffle
     train_x, train_y = shuffle(train_x, train_y, random_state=random_state)
@@ -579,19 +592,22 @@ def start_training(train_x,
 
     # Training
     train_x = np.transpose(train_x, (0, 2, 1))
+    train_y = train_y.reshape((-1, 1))
     cv_x = np.transpose(cv_x, (0, 2, 1))
+    cv_y = cv_y.reshape((-1, 1))
     test_x = np.transpose(test_x, (0, 2, 1))
+    test_y = test_y.reshape((-1, 1))
     logger.info(f'Train x transposed shape: {train_x.shape}')
-    logger.info(f'train y shape: {train_y.shape}')
+    logger.info(f'Train y shape: {train_y.shape}')
     logger.info(f'CV    x transposed shape: {cv_x.shape}')
     logger.info(f'Test  x transposed shape: {test_x.shape}')
 
-    lr = 1e-3
-    batch_size = 16
+    lr = 5e-4
+    batch_size = 64
     epochs = 15
 
     # TODO: CHANGE THIS WHEN TRAINING DIFFERENT MODEL
-    model = ActivityCNN(seq_len=train_x.shape[-1])
+    model = ActivityCNN(seq_len=train_x.shape[-1], in_ch=train_x.shape[-2])
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     weights = calculate_weights(train_y, len(ACTIVITY_TYPE))
@@ -619,15 +635,85 @@ def start_training(train_x,
              cm_names=cm_names)
 
 
+def count_torch_model_parameters(model):
+    table = [["Modules", "Parameters"]]
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue
+        param = parameter.numel()
+        table.append([name, param])
+        total_params += param
+    print(tabulate(table))
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
+
+
+def to_numpy(tensor):
+    if tensor.requires_grad:
+        return tensor.detach().cpu().numpy()
+    else:
+        return tensor.cpu().numpy()
+
+
+def convert_model_to_onnx(input_shpae=(1, 6, 210)):
+    print('\nConverting model to ONNX format:')
+    print(f'From {CNN_MODEL_PATH} to {CNN_ONNX_MODEL_PATH}')
+    model = ActivityCNN(seq_len=input_shpae[-1], in_ch=input_shpae[1])
+    state = torch.load(CNN_MODEL_PATH)
+    norm = state['norm']
+    print(f'Norm param: \n{norm}')
+    model.load_state_dict(state['state_dict'])
+    model.eval()
+
+    count_torch_model_parameters(model)
+
+    input_name = 'input'
+    output_name = 'output'
+    x = torch.randn(1, 6, 210)
+    torch.onnx.export(model,
+                      x,
+                      CNN_ONNX_MODEL_PATH,
+                      verbose=True,
+                      input_names=[input_name],
+                      output_names=[output_name],
+                      dynamic_axes={
+                          input_name: {
+                              0: 'batch_size'
+                          },
+                          output_name: {
+                              0: 'batch_size'
+                          }
+                      })
+    # Test
+    session = onnxruntime.InferenceSession(str(CNN_ONNX_MODEL_PATH))
+    out_torch = model(x)
+    out_onnx = session.run(None, {session.get_inputs()[0].name: to_numpy(x)})
+    np.testing.assert_allclose(to_numpy(out_torch),
+                               out_onnx[0],
+                               rtol=1e-05,
+                               atol=1e-06)
+
+
 @click.command()
-@click.argument('record-dir')
+@click.option('-train', '--train-dir', help='Training data directory')
+@click.option('-test', '--test-dir', help='Testing data directory')
+@click.option('-file', '--test-file', help='Evaluate single file')
 @click.option('-t', '--train-model', is_flag=True, help='Training model')
 @click.option('-f', '--force', is_flag=True, help='force extract feature')
-def main(record_dir, train_model, force):
-    if train_model:
-        train(Path(record_dir), force, USE_ML=False)
+@click.option('-c',
+              '--convert-model',
+              is_flag=True,
+              help='Convert Model to ONNX')
+def main(train_dir, test_dir, test_file, train_model, force, convert_model):
+    if train_model and train_dir is not None and test_dir is not None:
+        train_dir = Path(train_dir)
+        test_dir = Path(test_dir)
+        train(train_dir, test_dir, force, USE_ML=False)
+    elif convert_model:
+        convert_model_to_onnx()
     else:
-        evaluate_record(Path(record_dir))
+        evaluate_single_file(Path(test_file))
 
 
 if __name__ == '__main__':

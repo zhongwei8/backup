@@ -11,7 +11,7 @@ import click
 
 project_parent_dir = (Path(__file__).parent / '../../').resolve()
 # Add project parent directory to python path for import issue
-sys.path.append(project_parent_dir)
+# sys.path.append(project_parent_dir)
 
 
 def run(config_file):
