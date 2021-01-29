@@ -1,0 +1,25 @@
+library_name: har_cnn_new
+target_abis: [host]
+model_graph_format: file
+model_data_format: file
+models:
+  har_cnn_new:
+    platform: onnx
+    model_file_path: /home/farmer/xiaomi/git/activity-recognition/data/model/model-cnn-20200201.onnx
+    model_sha256_checksum: 5a270d816ac0d031a2d2b9e0ccded72af1a74edd7d49eeab3e8f3d547d5571b0
+    subgraphs:
+      - input_tensors:
+          - input
+        input_shapes:
+          - 1,4,1,217
+        output_tensors:
+          - output
+        output_shapes:
+          - 6,1
+        backend: pytorch
+    runtime: cpu
+    data_type: fp32_fp32
+    limit_opencl_kernel_time: 0
+    nnlib_graph_mode: 0
+    obfuscate: 0
+    winograd: 0

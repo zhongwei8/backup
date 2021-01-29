@@ -167,12 +167,13 @@ def load_dataset(input_dir,
                  shift=0.5,
                  use_amp=False,
                  filter_outlier=False,
-                 lp_filter=False):
+                 lp_filter=False,
+                 valid_only=True):
     data_x = []
     data_y = []
     for file_path in Path(input_dir).rglob('*.csv'):
         x, y = load_data_file(file_path, fs, downsample, duration, shift,
-                              use_amp, filter_outlier, lp_filter)
+                              use_amp, filter_outlier, lp_filter, valid_only)
         data_x.extend(x)
         data_y.extend(y)
     data_x = np.array(data_x, dtype=np.float32)
@@ -187,7 +188,8 @@ def load_data_file(file_path,
                    shift=0.5,
                    use_amp=True,
                    filter_outlier=False,
-                   lp_filter=False):
+                   lp_filter=False,
+                   valid_only=True):
     df = pd.read_csv(file_path, usecols=DATA_NAMES_TO_USE)
     data = df.values
     dest_fs = fs
@@ -196,7 +198,7 @@ def load_data_file(file_path,
         data = data[::downsample]
 
     data, activity = preprocess_data(data, use_amp, filter_outlier, lp_filter)
-    x, y = slice_data(data, activity, duration, shift, dest_fs)
+    x, y = slice_data(data, activity, duration, shift, dest_fs, valid_only)
 
     return x, y
 
@@ -255,7 +257,7 @@ def ewma(data: np.ndarray, inplace=False, alpha=0.99):
     return res
 
 
-def slice_data(in_data, activity, frame_len, shift, fs):
+def slice_data(in_data, activity, frame_len, shift, fs, valid_only=True):
     win_len = int(frame_len * fs)
     stride = int(shift * fs)
     input_shape = np.shape(in_data)
@@ -265,6 +267,7 @@ def slice_data(in_data, activity, frame_len, shift, fs):
         return None, None
     frames = []
     labels = []
+    load_all = not valid_only
     for i in range(0, in_data.shape[0] - win_len, stride):
         acc_raw = in_data[i:i + win_len]
 
@@ -273,7 +276,7 @@ def slice_data(in_data, activity, frame_len, shift, fs):
             # Convert activity to target category
             category = label_to_category_idx(activity[i])
             # Category <0 means this type data should not be use
-            if category >= 0:
+            if category >= 0 or load_all:
                 frames.append(acc_raw)
                 labels.append(category)
     return frames, labels

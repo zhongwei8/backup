@@ -55,20 +55,29 @@ NEW_HEADER_NAMES = [
 ]
 
 
-def process_one_file(src_path: Path, target_dir: Path):
+def process_one_file(src_path: Path, target_dir: Path, down_sample):
     dst_path = target_dir / src_path.name
     print(f'\nProcessing origin file: {src_path}')
     print(f'Saving to file: {dst_path}')
-    df = pd.read_csv(src_path, header=1, names=NEW_HEADER_NAMES)
-    df['CurrentTimeMillis'] = df['CurrentTimeMillis'].astype(int)
-    df['EventTimestamp(ns)'] = df['EventTimestamp(ns)'].astype(int)
+    df = pd.read_csv(src_path, header=1)
+    if 'CurrentTimestamp' in df.columns:
+        print('Rename CurrentTimestamp to CurrentTimeMillis')
+        df.rename(columns={'CurrentTimestamp': 'CurrentTimeMillis'},
+                  inplace=True)
+        df['CurrentTimeMillis'] = df['CurrentTimeMillis'].astype(int)
+    if 'EventTimestamp' in df.columns:
+        print('Rename EventTimestamp to EventTimestamp(ns)')
+        df.rename(columns={'EventTimestamp': 'EventTimestamp(ns)'},
+                  inplace=True)
+        df['EventTimestamp(ns)'] = df['EventTimestamp(ns)'].astype(int)
     df['Activity'] = df['Activity'].astype(int)
-    # print(df.head(5))
-
     # Convert timestamp from ms to ns
     df['EventTimestamp(ns)'] = df['EventTimestamp(ns)'] * 1000_000
 
-    # Convert type
+    if down_sample:
+        print('Applying 1/2 down sample')
+        df = df[::2]
+
     masks = []
     for i in range(len(ORIGIN_LABEL_NAMES)):
         masks.append(df['Activity'] == i)
@@ -82,7 +91,8 @@ def process_one_file(src_path: Path, target_dir: Path):
 @click.command()
 @click.argument('data-dir')
 @click.argument('target-dir')
-def main(data_dir, target_dir):
+@click.option('-d', '--down-sample', is_flag=True, help='Downsample to 26Hz')
+def main(data_dir, target_dir, down_sample):
     data_dir = Path(data_dir)
     target_dir = Path(target_dir)
     if data_dir.exists():
@@ -91,7 +101,7 @@ def main(data_dir, target_dir):
                 dst_dir = target_dir / f.parent.relative_to(data_dir)
                 if not dst_dir.exists():
                     dst_dir.mkdir(parents=True)
-                process_one_file(f, dst_dir)
+                process_one_file(f, dst_dir, down_sample)
 
 
 if __name__ == "__main__":

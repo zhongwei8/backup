@@ -11,6 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.special import softmax
 
 cur_dir = Path(__file__).parent.resolve()
 project_dir = cur_dir / '../../'
@@ -28,7 +29,7 @@ from src.py.utils.model_utils import GeneralModelPredictor
 # So this file dependent on ai-algorithm-depolyment
 from utils.base import SensorAlgo
 
-keras_model_file = str(cur_dir / '../../data/model/weights.best-0615.hdf5')
+keras_model_file = str(cur_dir / '../../data/model/weights.best-0.hdf5')
 torch_onnx_model_file = str(cur_dir / 'models/model-cnn-20200125.onnx')
 
 
@@ -221,6 +222,7 @@ class HarModelCNN(SensorAlgo):
         self._argmax = 0
         self._probs = np.zeros(self._num_classes)
         self._cur_timestamp = 0
+        self._res = {}
 
     def feed_data(self, data_point):
         """ main function processes data and count steps"""
@@ -248,7 +250,7 @@ class HarModelCNN(SensorAlgo):
         if len(self._buffer) >= self._buf_len:
             x = self.normalize_data()
             probs = self._model.predict(x)
-            self._probs = np.squeeze(probs[0])
+            self._probs = softmax(np.squeeze(probs[0]))
             self._argmax = np.argmax(self._probs)
 
             updated = True
@@ -294,16 +296,20 @@ class HarModelCNN(SensorAlgo):
         result = pd.DataFrame.from_dict(predicts)
         print(result.head(5))
         result = result.drop('EventTimestamp(ns)', axis='columns')
-        accx = df['AccelX']
+        acc = df[['AccelX', 'AccelY', 'AccelZ']]
+        true_pred = result[['Activity', 'Predict']]
+        prob = result.drop(['Activity', 'Predict'], axis='columns')
         mpl.use('Qt5Agg')
         plt.figure()
-        plt.subplot(211)
-        plt.plot(accx, label='acc x')
+        plt.subplot(311)
+        acc.plot(ax=plt.gca())
         plt.legend()
-        plt.subplot(212)
+        plt.subplot(312)
         # plt.plot(y_pred, label='y_pred')
         # plt.plot(y_true, label='y_true')
-        result.plot(ax=plt.gca())
+        true_pred.plot(ax=plt.gca())
+        plt.subplot(313)
+        prob.plot(ax=plt.gca())
         plt.legend()
         plt.show()
 
