@@ -71,7 +71,7 @@ class GHM_Loss:
         num_valid_bin = tf.reduce_sum(tf.cast(valid_bins, dtype=tf.float32))
 
         if alpha > 0:
-            update = tf.assign(
+            update = tf.compat.v1.assign(
                 self.acc_sum,
                 tf.where(valid_bins,
                          alpha * self.acc_sum + (1 - alpha) * num_in_bin,

@@ -61,11 +61,14 @@ class HarDetector(SensorAlgo):
         self._num_classes = num_classes
         self._input_names = [
             'EventTimestamp(ns)', 'Prob0', 'Prob1', 'Prob2', 'Prob3', 'Prob4',
-            'Prob5'
+            'Prob5', 'Activity'
         ]
-        self._output_names = ['EventTimestamp(ns)', 'PredictActivity']
+        self._output_names = [
+            'EventTimestamp(ns)', 'Activity', 'PredictActivity'
+        ]
         self._algo_name = 'HarDetector'
         self._cur_timestamp = 0
+        self._res = {}
 
     def reset(self):
         self._buffer = np.zeros(self._buf_len, dtype=int)
@@ -73,6 +76,7 @@ class HarDetector(SensorAlgo):
         self._idx = 0
         self._cur_timestamp = 0
         self._activity = 0
+        self._res = {}
 
     def is_realtime(self):
         return True
@@ -126,13 +130,15 @@ class HarDetector(SensorAlgo):
         self._idx += 1
         if self._idx >= self._buf_len:
             self._idx = 0
+        self._res = {
+            'EventTimestamp(ns)': self._cur_timestamp,
+            'Activity': data_point['Activity'],
+            'PredictActivity': self._activity,
+        }
         return True
 
     def get_result(self):
-        return {
-            'EventTimestamp(ns)': self._cur_timestamp,
-            'PredictActivity': self._activity,
-        }
+        return self._res
 
 
 class HarDetectorFSM(HarDetector):
