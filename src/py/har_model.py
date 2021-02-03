@@ -15,21 +15,17 @@ from scipy.special import softmax
 
 cur_dir = Path(__file__).parent.resolve()
 project_dir = cur_dir / '../../'
-depolyment_dir = cur_dir / '../../../../../ai-algorithm-depolyment/'
-if not depolyment_dir.exists():
-    depolyment_dir = cur_dir / '../../../ai-algorithm-depolyment/'
-
 sys.path.append(str(project_dir))
-# sys.path.append(str(cur_dir))
-sys.path.append(str(depolyment_dir))
-
 from src.py.utils.model_utils import GeneralModelPredictor
 
+depolyment_dir = cur_dir / '../../../ai-algorithm-depolyment/'
+if not depolyment_dir.exists():
+    print(f'Warnning: ai-algorithm-depolyment not exits: {depolyment_dir}')
+sys.path.append(str(depolyment_dir))
 # Import from ai-algorithm-depolyment repo
-# So this file dependent on ai-algorithm-depolyment
 from utils.base import SensorAlgo
 
-keras_model_file = str(cur_dir / '../../data/model/weights.best-0.hdf5')
+keras_model_file = str(cur_dir / '../../data/model/weights.best-0615.hdf5')
 torch_onnx_model_file = str(cur_dir / 'models/model-cnn-20200125.onnx')
 
 

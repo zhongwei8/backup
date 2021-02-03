@@ -7,17 +7,12 @@ import sys
 
 import numpy as np
 
-cur_dir = Path(__file__).parent.resolve()
-root_dir = cur_dir / '../../../../../ai-algorithm-depolyment'
-if root_dir.exists():
-    sys.path.append(root_dir)
-else:
-    root_dir = cur_dir / '../../../ai-algorithm-depolyment'
-    if root_dir.exists():
-        sys.path.append(root_dir)
-
+current_dir = Path(__file__).parent.resolve()
+depolyment_dir = current_dir / '../../../ai-algorithm-depolyment/'
+if not depolyment_dir.exists():
+    print(f'Warnning: ai-algorithm-depolyment not exits: {depolyment_dir}')
+sys.path.append(str(depolyment_dir))
 # Import from ai-algorithm-depolyment repo
-# So this file dependent on ai-algorithm-depolyment
 from utils.base import SensorAlgo
 
 

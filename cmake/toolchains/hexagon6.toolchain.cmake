@@ -1,0 +1,27 @@
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR arm)
+
+if (EXISTS ${HEXAGON_TOOLS})
+    message(STATUS "Searching HEXAGON_TOOLS: ${HEXAGON_TOOLS}")
+    set(HEXAGON_BIN_DIR "${HEXAGON_TOOLS}/qc/bin")
+    find_program(HEXAGON_C_COMPILER "hexagon-clang" ${HEXAGON_BIN_DIR})
+    find_program(HEXAGON_CXX_COMPILER "hexagon-clang" ${HEXAGON_BIN_DIR})
+    find_program(HEXAGON_AR "hexagon-ar" "${HEXAGON_TOOLS}/gnu/bin")
+    find_program(HEXAGON_LINKER "hexagon-llvm-link" ${HEXAGON_BIN_DIR})
+else()
+    message(STATUS "Using default hexagon compile tools")
+    set(HEXAGON_C_COMPILER "hexagon-clang")
+    set(HEXAGON_CXX_COMPILER "hexagon-clang")
+    set(HEXAGON_AR "hexagon-ar")
+    set(HEXAGON_LINKER "hexagon-llvm-link")
+endif()
+
+set(CMAKE_C_COMPILER ${HEXAGON_C_COMPILER})
+set(CMAKE_CXX_COMPILER ${HEXAGON_CXX_COMPILER})
+set(CMAKE_AR ${HEXAGON_AR})
+set(CMAKE_LINKER ${HEXAGON_LINKER})
+
+set(HEXAGON ON)
+set(HEXAGON6 ON)
+
+add_compile_options(-Wall -Wpointer-arith -Wstrict-prototypes -Wnested-externs -mv55 -Uqdsp6 -Uq6sim -Uqdsp6r0 -Os -g -fdata-sections -ffunction-sections -nostdlib -fno-exceptions -fno-strict-aliasing -fstack-protector -Wno-low -mllvm -disable-store-widen -mllvm -Werror -Wall -Wextra -Wno-sign-compare -Wno-unused-result -Wno-unused-parameter)

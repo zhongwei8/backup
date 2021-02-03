@@ -1,12 +1,12 @@
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/../include/har)
+include_directories(${PROJECT_SOURCE_DIR}/src/c/har_model)
 
 include_directories(./)
 add_library(har_model_c har_model.c)
 
 if(HOST)
-  find_library(LIB_HAR_CNN har_cnn HINTS ${PROJECT_SOURCE_DIR}/dnn_model_libs_host/)
-  find_library(LIB_MICRO micro HINTS ${PROJECT_SOURCE_DIR}/dnn_model_libs_host/)
+  find_library(LIB_HAR_CNN har_cnn HINTS ${PROJECT_SOURCE_DIR}/lib/x86_64/)
+  find_library(LIB_MICRO micro HINTS ${PROJECT_SOURCE_DIR}/lib/x86_64/)
   target_link_libraries(har_model_c PRIVATE ${LIB_MICRO} ${LIB_HAR_CNN})
   find_package(PythonLibs 3.5 REQUIRED)
   set_target_properties(har_model_c PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
