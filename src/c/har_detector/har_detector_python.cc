@@ -3,9 +3,12 @@
  * Description: This is the har detector python interface source file.
  *
  */
-#include <pybind11/stl.h>
-#include <stdlib.h>
+
 #include "har_detector.h"
+
+#include <stdlib.h>
+
+#include <pybind11/stl.h>
 #include "pybind11/pybind11.h"
 
 class HarDetector {

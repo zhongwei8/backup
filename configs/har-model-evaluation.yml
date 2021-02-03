@@ -2,7 +2,8 @@ name: har-detector-evaluation
 type: evaluation
 dataset:
   name: MIOT-2020Q4-relabeled-test
-  path: /data/sensor-data/activity-recognition/ailab/clean/cleaned-0628-test-ailab-converted
+  path: https://cnbj1.fds.api.xiaomi.com/new-sensor-bucket/sensor-data/activity-recognition/clean/MIOT-2020Q4-relabeled-test.zip
+  sha256sum: 4b949a3de6f029d5153d4ecd5e49ef68f7fb50e8284a66270258bec520368aa0
 algos:
   har_model:
     module: activity-recognition.src.py.har_model
