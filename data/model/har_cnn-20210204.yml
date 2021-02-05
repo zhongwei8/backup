@@ -1,0 +1,21 @@
+library_name: har_cnn
+target_abis: [host]
+model_graph_format: file
+model_data_format: file
+models:
+  har_cnn:
+    platform: keras
+    model_file_path: /home/farmer/xiaomi/git/activity-recognition/data/model/har_cnn-20210204.h5
+    model_sha256_checksum: f6a4d7d794023fd663a4d4ecb1d54f07fb544898bfc7b710207fdf7cf5118f20
+    subgraphs:
+      - input_tensors:
+          - conv2d_input
+        input_shapes:
+          - 1,1,208,4
+        output_tensors:
+          - dense/Softmax:0
+        output_shapes:
+          - 1,6
+    runtime: cpu
+    data_type: fp32_fp32
+    quantize: 0

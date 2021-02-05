@@ -160,7 +160,9 @@ def train(args, x_train, y_train, x_val, y_val, x_test, y_test, fold_idx):
     print('test shape:', x_test.shape, y_test.shape)
 
     print('Build model...')
-    n_timesteps, n_features = x_train.shape[1], x_train.shape[2]
+    n_timesteps, n_features = x_train.shape[-2], x_train.shape[-1]
+    print(f'n_timesteps {n_timesteps}')
+    print(f'n_features: {n_features}')
     # n_features = x_train.shape[1]
     n_outputs = y_train_bin.shape[1]
     if os.path.isfile(args.model_file):
@@ -320,6 +322,18 @@ def main():
                                       duration=args.win_len,
                                       shift=args.shift,
                                       use_amp=args.use_amp)
+
+        print(f'xdata shape: {x_data.shape}')
+        # exit(1)
+        # train_x = np.transpose(train_x, (0, 2, 1))
+        # test_x = np.transpose(test_x, (0, 2, 1))
+        # Change to 2d, (N,C,W) to (N,C,H,W), H=1
+        old_shape = x_data.shape
+        x_data = x_data.reshape(old_shape[0], 1, old_shape[1], old_shape[2])
+        old_shape = x_test.shape
+        x_test = x_test.reshape(old_shape[0], 1, old_shape[1], old_shape[2])
+        print(f'xdata new shape: {x_data.shape}')
+
         x_train, x_val, y_train, y_val = train_test_split(x_data,
                                                           y_data,
                                                           test_size=0.33,

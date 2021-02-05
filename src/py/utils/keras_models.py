@@ -1,14 +1,16 @@
 # Copyright 2020 Xiaomi
-import keras
-from keras import regularizers
-from keras.layers import (LSTM, BatchNormalization, Concatenate, Conv1D,
-                          Convolution1D, Dense, Dropout,
-                          GlobalAveragePooling1D, Input, MaxPooling1D,
-                          Multiply, Permute)
-from keras.models import Model, Sequential
-from keras.optimizers import Adam
 import onnxruntime
 import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import (LSTM, BatchNormalization, Concatenate,
+                                     Conv1D, Conv2D, Convolution1D, Dense,
+                                     Dropout, Flatten, GlobalAveragePooling1D,
+                                     GlobalAveragePooling2D, Input,
+                                     MaxPooling1D, MaxPooling2D, Multiply,
+                                     Permute)
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.optimizers import Adam
 import tensorflow_model_optimization as tfmot
 
 from . import tcresnet_blocks
@@ -271,26 +273,30 @@ def cnn_model_base(n_timesteps,
 def cnn_model(n_timesteps, n_features, n_outputs):
     model = Sequential()
     model.add(
-        Conv1D(12,
-               5,
-               input_shape=(n_timesteps, n_features),
+        Conv2D(12,
+               kernel_size=(1, 5),
+               input_shape=(1, n_timesteps, n_features),
                padding='same',
                activation='relu'))
     model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size=2, padding='same', strides=2))
-    model.add(Conv1D(12, 5, padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='same', strides=2))
+    model.add(Conv2D(12, kernel_size=(1, 5), padding='same',
+                     activation='relu'))
     model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size=2, padding='same', strides=2))
-    model.add(Conv1D(16, 5, padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='same', strides=2))
+    model.add(Conv2D(16, kernel_size=(1, 5), padding='same',
+                     activation='relu'))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
-    model.add(MaxPooling1D(pool_size=2, padding='same', strides=2))
-    model.add(Conv1D(20, 5, padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='same', strides=2))
+    model.add(Conv2D(20, kernel_size=(1, 5), padding='same',
+                     activation='relu'))
     model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size=2, strides=2, padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), strides=2, padding='same'))
     # model.add(LSTM(16))
     # model.add(Flatten())
-    model.add(GlobalAveragePooling1D())
+    model.add(GlobalAveragePooling2D())
+    model.add(Flatten())
 
     model.add(
         Dense(n_outputs,

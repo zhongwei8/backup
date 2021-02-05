@@ -9,11 +9,15 @@ set -e
 BUILD_DIR=build_x86_64/
 rm ${BUILD_DIR} -rf
 
+export CFLAGS="-fPIC"
+export CXXFLAGS="-fPIC -I${BUILD_DIR}/third_party/install/gtest/include"
+
 cmake -B${BUILD_DIR} \
       -DCMAKE_PREFIX_PATH=`pwd`/prerequisites/install/ \
       -DPYTHON_INCLUDE_DIR=$(python3 -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())")  \
       -DPYTHON_LIBRARY=$(python3 -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))") \
       -DHOST=ON \
+      -DMIOT_ALGO_ENABLE_TESTS=OFF \
       ./
 
 cmake --build ${BUILD_DIR} --verbose

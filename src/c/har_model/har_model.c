@@ -14,7 +14,7 @@
 #define MI_HAR_MODEL_VERSION (1001)
 #define HAR_ACCEL_SAMPLE_RATE (26)
 #define HAR_CLASS_NUM (6)
-#define INPUT_DIMS 3
+#define INPUT_DIMS 4
 #define BUF_LEN (832)  // 8(time) * 26(fs) * 4(channel)
 #define CHANNEL_NUM (4)
 #define WIN_LEN (208)  // 8 * 26(fs)
@@ -40,6 +40,7 @@ typedef struct mi_har_model {
 mi_har_model *mi_har_model_new() {
   mi_har_model *mdl = (mi_har_model *)malloc(sizeof(mi_har_model));
   mdl->micro_interpreter_handle = har_cnn_GetMaceMicroEngineHandle();
+
   return mdl;
 }
 
@@ -51,8 +52,9 @@ void mi_har_model_free(mi_har_model *mdl) {
 
 void mi_har_model_init(mi_har_model *mdl) {
   mdl->input_shape[0] = 1;
-  mdl->input_shape[1] = WIN_LEN;
-  mdl->input_shape[2] = CHANNEL_NUM;
+  mdl->input_shape[1] = 1;
+  mdl->input_shape[2] = WIN_LEN;
+  mdl->input_shape[3] = CHANNEL_NUM;
   // input data buffer
   for (int32_t i = 0; i < BUF_LEN; ++i) {
     mdl->buffer[i] = 0.f;

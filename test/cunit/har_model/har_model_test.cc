@@ -3,11 +3,13 @@
  * Description: This the har model unit test source file.
  *
  */
+#include "har_model.h"
+
 #include "gtest/gtest.h"
 
-TEST(HarModelTest, DemoTest) {
-  float expected_result = 0.1;
-  float result = 0.1;
 
-  EXPECT_EQ(expected_result, result);
+TEST(HarModelTest, DemoTest) {
+  mi_har_model *inst = mi_har_model_new();
+  mi_har_model_init(inst);
+  mi_har_model_free(inst);
 }

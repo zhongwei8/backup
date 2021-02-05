@@ -25,8 +25,8 @@ sys.path.append(str(depolyment_dir))
 # Import from ai-algorithm-depolyment repo
 from utils.base import SensorAlgo
 
-keras_model_file = str(cur_dir / '../../data/model/weights.best-0615.hdf5')
-torch_onnx_model_file = str(cur_dir / 'models/model-cnn-20200125.onnx')
+keras_model_file = str(cur_dir / '../../data/model/har_cnn-20210204.h5')
+torch_onnx_model_file = str(cur_dir / 'models/model-cnn-20200201.onnx')
 
 
 class HarModel(SensorAlgo):
@@ -101,7 +101,7 @@ class HarModel(SensorAlgo):
 
         updated = False
         if self._cnt >= self._buf_len and self._idx >= self._buf_len:
-            probs = self._model.predict(self._buffer)
+            probs = self._model.predict(self._buffer[np.newaxis, :])
             self._probs = probs[0]
             self._argmax = np.argmax(self._probs)
 
@@ -134,6 +134,38 @@ class HarModel(SensorAlgo):
 
     def get_model(self):
         return self._model
+
+    def process_file(self, file_path):
+        df = pd.read_csv(file_path)
+        predicts = {}
+        for i, row in df.iterrows():
+            update = self.feed_data(row)
+            if update:
+                result = self.get_result()
+                for key in result:
+                    if key not in predicts:
+                        predicts[key] = [result[key]]
+                    else:
+                        predicts[key].append(result[key])
+        result = pd.DataFrame.from_dict(predicts)
+        print(result.head(5))
+        result = result.drop('EventTimestamp(ns)', axis='columns')
+        acc = df[['AccelX', 'AccelY', 'AccelZ']]
+        true_pred = result[['Activity', 'Predict']]
+        prob = result.drop(['Activity', 'Predict'], axis='columns')
+        mpl.use('Qt5Agg')
+        plt.figure()
+        plt.subplot(311)
+        acc.plot(ax=plt.gca())
+        plt.legend()
+        plt.subplot(312)
+        # plt.plot(y_pred, label='y_pred')
+        # plt.plot(y_true, label='y_true')
+        true_pred.plot(ax=plt.gca())
+        plt.subplot(313)
+        prob.plot(ax=plt.gca())
+        plt.legend()
+        plt.show()
 
 
 class HarModelCNN(SensorAlgo):
@@ -313,7 +345,7 @@ class HarModelCNN(SensorAlgo):
 @click.command()
 @click.argument('file-path')
 def main(file_path):
-    model = HarModelCNN()
+    model = HarModel()
     model.process_file(file_path)
 
 

@@ -1,10 +1,11 @@
-import os, argparse
-
-import tensorflow as tf
+import argparse
+import os
+from pathlib import Path
 
 from keras import backend as K
 from keras.models import load_model
-from tensorflow.python.framework import graph_util, graph_io
+import tensorflow as tf
+from tensorflow.python.framework import graph_io, graph_util
 
 # The original freeze_graph function
 # from tensorflow.python.tools.freeze_graph import freeze_graph
@@ -65,6 +66,10 @@ if __name__ == '__main__':
     model = load_model(args.input, compile=False)
     print(model.outputs)
     print(model.inputs)
+    out_path = Path(args.output)
     frozen_graph = freeze_session(
         K.get_session(), output_names=[out.op.name for out in model.outputs])
-    graph_io.write_graph(frozen_graph, OUTPUT_DIR, args.output, as_text=False)
+    graph_io.write_graph(frozen_graph,
+                         out_path.parent,
+                         out_path.name,
+                         as_text=False)

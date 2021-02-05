@@ -4,7 +4,11 @@ from __future__ import absolute_import, division, print_function
 from pathlib import Path
 import sys
 
+import click
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 current_dir = Path(__file__).parent
 depolyment_dir = current_dir / '../../../ai-algorithm-depolyment/'
@@ -89,3 +93,46 @@ class HarModel_C(SensorAlgo):
 
     def get_result(self):
         return self._res
+
+    def process_file(self, file_path):
+        df = pd.read_csv(file_path)
+        predicts = {}
+        for i, row in df.iterrows():
+            update = self.feed_data(row)
+            if update:
+                result = self.get_result()
+                for key in result:
+                    if key not in predicts:
+                        predicts[key] = [result[key]]
+                    else:
+                        predicts[key].append(result[key])
+        result = pd.DataFrame.from_dict(predicts)
+        print(result.head(5))
+        result = result.drop('EventTimestamp(ns)', axis='columns')
+        acc = df[['AccelX', 'AccelY', 'AccelZ']]
+        true_pred = result[['Activity', 'Predict']]
+        prob = result.drop(['Activity', 'Predict'], axis='columns')
+        mpl.use('Qt5Agg')
+        plt.figure()
+        plt.subplot(311)
+        acc.plot(ax=plt.gca())
+        plt.legend()
+        plt.subplot(312)
+        # plt.plot(y_pred, label='y_pred')
+        # plt.plot(y_true, label='y_true')
+        true_pred.plot(ax=plt.gca())
+        plt.subplot(313)
+        prob.plot(ax=plt.gca())
+        plt.legend()
+        plt.show()
+
+
+@click.command()
+@click.argument('file-path')
+def main(file_path):
+    model = HarModel_C()
+    model.process_file(file_path)
+
+
+if __name__ == '__main__':
+    main()
