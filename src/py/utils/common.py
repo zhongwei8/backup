@@ -531,6 +531,12 @@ def save_model(model, model_name, out_path, type='.yaml'):
         json_f.write(model_str)
     model.save_weights(weisghts_file)
 
+    model_file = os.path.join(out_path, f_name + '.h5')
+    print(f'Saving model to: {model_file}')
+    print(model.inputs[0].name)
+    print(model.outputs[0].name)
+    model.save(model_file)
+
 
 def plot_har_prediction(filename, data_dict, predictions={}):
     print("plot data")

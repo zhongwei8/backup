@@ -1,0 +1,31 @@
+set(THIRD_PARTY_BUILD_DIR "${PROJECT_BINARY_DIR}/third_party" CACHE STRING "Third party libraries download & build directories.")
+message(STATUS "Third party binary dir: ${PROJECT_BINARY_DIR}/third_party")
+
+# Forwarding the cross compile flags
+set(THIRD_PARTY_EXTRA_CMAKE_ARGS
+  -DCMAKE_C_FLAGS=${MIOT_ALGO_CC_FLAGS}
+  -DCMAKE_CXX_FLAGS=${MIOT_ALGO_CC_FLAGS}
+)
+
+if(CMAKE_TOOLCHAIN_FILE)
+  set(THIRD_PARTY_EXTRA_CMAKE_ARGS
+      ${THIRD_PARTY_EXTRA_CMAKE_ARGS}
+      -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+  )
+endif(CMAKE_TOOLCHAIN_FILE)
+
+if(CROSSTOOL_ROOT)
+  set(THIRD_PARTY_EXTRA_CMAKE_ARGS
+      ${THIRD_PARTY_EXTRA_CMAKE_ARGS}
+      -DCROSSTOOL_ROOT=${CROSSTOOL_ROOT}
+  )
+endif(CROSSTOOL_ROOT)
+
+if(PLATFORM)
+  set(THIRD_PARTY_EXTRA_CMAKE_ARGS
+      ${THIRD_PARTY_EXTRA_CMAKE_ARGS}
+      -DPLATFORM=${PLATFORM}
+  )
+endif(PLATFORM)
+
+include(${PROJECT_SOURCE_DIR}/third_party/googletest/googletest.cmake)

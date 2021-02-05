@@ -1,0 +1,28 @@
+#include "miot_algo_har_version.h"
+
+static const char *lib_version_info = "@VERSION_INFO_STRING@";
+static const char *lib_version_name = "@VERSION_NAME_STRING@";
+
+static const int version_major = @PROJECT_VERSION_MAJOR@;
+static const int version_minor = @PROJECT_VERSION_MINOR@;
+static const int version_patch = @PROJECT_VERSION_PATCH@;
+
+const char *miot_algo_har_get_version_info() {
+  return lib_version_info;
+}
+
+const char *miot_algo_har_get_version_name() {
+  return lib_version_name;
+}
+
+int miot_algo_har_get_version_major() {
+  return version_major;
+}
+
+int miot_algo_har_get_version_minor() {
+  return version_minor;
+}
+
+int miot_algo_har_get_version_patch() {
+  return version_patch;
+}

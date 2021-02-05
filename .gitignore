@@ -1,5 +1,8 @@
-motion/version.c
+src/c/miot_algo_har_version.c
 tmp/
+build_x86_64/
+build_x86_32/
+build_hexagon/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### C template
@@ -23,13 +26,11 @@ tmp/
 
 # Libraries
 *.lib
-*.a
 *.la
 *.lo
 
 # Shared objects (inc. Windows DLLs)
 *.dll
-*.so
 *.so.*
 *.dylib
 
@@ -145,8 +146,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/

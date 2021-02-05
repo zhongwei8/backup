@@ -631,6 +631,7 @@ def convert_model_to_onnx(torch_model_path,
     print('Testing converted model...')
     session = onnxruntime.InferenceSession(str(onnx_model_path))
     out_torch = model(x)
+    print(f'Output shape: {out_torch.shape}')
     out_onnx = session.run(None, {session.get_inputs()[0].name: to_numpy(x)})
     np.testing.assert_allclose(to_numpy(out_torch),
                                out_onnx[0],
