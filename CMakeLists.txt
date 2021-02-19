@@ -6,14 +6,23 @@ option(MIOT_ALGO_ENABLE_TESTS "whether to build c++ unit tests" OFF)
 if (NOT DEFINED OS)
   message(STATUS "OS not set, set to default: linux")
   set(OS "linux")
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/prerequisites/install")
 endif ()
 if (NOT DEFINED ARCH)
   message(STATUS "ARCH not set, set to default: x86_64")
   set(ARCH "x86_64")
 endif ()
+if (NOT DEFINED LIB_TYPE)
+  message(STATUS "LIB_TYPE not set, set to default: STATIC")
+  set(LIB_TYPE "STATIC")
+endif ()
+
 if (OS STREQUAL "linux" AND ARCH STREQUAL "x86_64")
   set(HOST ON)
   set(MIOT_ALGO_ENABLE_TESTS ON)
+endif()
+if (OS STREQUAL "linux" OR OS STREQUAL "android")
+  set(LIB_TYPE "SHARED")
 endif()
 
 ##---------------------- Version info ----------------------------------------##
@@ -46,9 +55,17 @@ set(MI_HAR_LIB_C
   src/c/har_detector/har_detector.c
   src/c/har_model/har_model.c
 )
+if ((OS STREQUAL "linux") OR (OS STREQUAL "generic" AND ARCH STREQUAL "qdsp"))
+  add_library(mi_har ${LIB_TYPE} ${MI_HAR_LIB_C})
+  set_target_properties(mi_har PROPERTIES PUBLIC_HEADER src/c/activity_recognizer.h)
+endif()
 
-add_library(mi_har_pure ${MI_HAR_LIB_C})
-set_target_properties(mi_har_pure PROPERTIES PUBLIC_HEADER  src/c/activity_recognizer.h)
+set(MI_IOR_LIB_C
+  src/c/indoor_outdoor_recognizer.c
+  src/c/gpgsv/gpgsv_utils.c
+)
+add_library(mi_ior ${LIB_TYPE} ${MI_IOR_LIB_C})
+set_target_properties(mi_ior PROPERTIES PUBLIC_HEADER src/c/indoor_outdoor_recognizer.h)
 
 ##---------------------- Install and Package ---------------------------------##
 set(CPACK_GENERATOR "ZIP")
@@ -68,11 +85,17 @@ if ((OS STREQUAL "linux") OR (OS STREQUAL "generic" AND ARCH STREQUAL "qdsp"))
   find_library(LIB_HAR_CNN model_har_cnn HINTS ${HAR_MODEL_EXTRA_LIB_PATH})
   find_library(LIB_MICRO micro HINTS ${HAR_MODEL_EXTRA_LIB_PATH})
   target_link_libraries(mi_har ${LIB_HAR_CNN} ${LIB_MICRO})
-  install(FILES ${LIB_HAR_CNN} TYPE LIB)
-  install(FILES ${LIB_MICRO} TYPE LIB)
+  if (LIB_TYPE STREQUAL "STATIC")
+    install(FILES ${LIB_HAR_CNN} TYPE LIB)
+    install(FILES ${LIB_MICRO} TYPE LIB)
+  endif()
+  install(TARGETS mi_har
+  LIBRARY DESTINATION lib
+  PUBLIC_HEADER DESTINATION include
+)
 endif()
 
-install(TARGETS mi_har
+install(TARGETS mi_ior
   LIBRARY DESTINATION lib
   PUBLIC_HEADER DESTINATION include
 )
@@ -95,6 +118,7 @@ if(MIOT_ALGO_ENABLE_TESTS)
   message(STATUS "Enable unit test")
 
   include(${PROJECT_SOURCE_DIR}/third_party/third_party.cmake)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/include)
   add_subdirectory(test/cunit)
 endif(MIOT_ALGO_ENABLE_TESTS)
 

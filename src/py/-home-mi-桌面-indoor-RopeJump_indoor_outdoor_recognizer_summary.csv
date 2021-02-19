@@ -1,0 +1,10 @@
+nmea_file,undefine_cnt,indoor_cnt,outdoor_cnt,cnt,undefine_rate,indoor_rate,outdoor_rate
+2020_12_07_15_09_25_658-15133509928-gender_male-age_29-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,15,92,107,0.0,0.14018691588785046,0.8598130841121495
+2020_12_02_10_47_01_311-15133509928-gender_male-age_29-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,1,11,12,0.0,0.08333333333333333,0.9166666666666666
+2020_12_09_15_36_28_317-15133509928-gender_male-age_28-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,1,30,31,0.0,0.03225806451612903,0.967741935483871
+2020_12_02_10_48_52_177-15133509928-gender_male-age_29-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,1,11,12,0.0,0.08333333333333333,0.9166666666666666
+2020_12_02_10_41_24_173-15133509928-gender_male-age_29-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,1,42,43,0.0,0.023255813953488372,0.9767441860465116
+2020_12_07_15_20_50_237-15133509928-gender_male-age_29-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,1,60,61,0.0,0.01639344262295082,0.9836065573770492
+2020_12_09_15_31_50_558-15133509928-gender_male-age_28-height_176-weight_74-wearPosition_right-scene_RopeJump-nmea.csv,0,9,17,26,0.0,0.34615384615384615,0.6538461538461539
+2020_12_09_15_31_46_352-19908765019-gender_male-age_26-height_165-weight_63-wearPosition_right-scene_RopeJump-nmea.csv,0,2,28,30,0.0,0.06666666666666667,0.9333333333333333
+2020_12_09_15_21_53_883-19908765019-gender_male-age_26-height_165-weight_63-wearPosition_right-scene_RopeJump-nmea.csv,0,10,32,42,0.0,0.23809523809523808,0.7619047619047619

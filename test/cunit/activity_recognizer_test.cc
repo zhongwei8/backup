@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 
 TEST(MIActivityRecognizerTest, InitAndFree) {
-  MIActivityRecognizer* recognizer = mi_activity_recognizer_new();
+  void* recognizer = mi_activity_recognizer_new();
   mi_activity_recognizer_init(recognizer, 0.8, 15);
   mi_activity_recognizer_free(recognizer);
 }

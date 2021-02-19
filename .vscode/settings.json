@@ -4,7 +4,90 @@
         "src/py",
         "test/py",
     ],
-    "files.trimTrailingWhitespace": true,
+    "C_Cpp.clang_format_fallbackStyle": "Google",
+    "C_Cpp.clang_format_sortIncludes": true,
+    "C_Cpp.default.cStandard": "c99",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.cppStandard": "c++11",
+    "C_Cpp.loggingLevel": "Warning",
+    "files.trimTrailingWhitespace": true,
     "python.languageServer": "Pylance",
+
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "editor.wordBasedSuggestions": false,
+        "editor.tabSize": 4,
+
+    },
+    "python.analysis.completeFunctionParens": true,
+    "python.autoComplete.addBrackets": true,
+    "python.formatting.provider": "yapf",
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.showStartPage": true,
+    "python.sortImports.args": [
+        "--force-sort-within-sections",
+        "--multi-line=0"],
+    "editor.rulers": [
+        80, 130
+    ],
+
+    "[c]":{
+        "editor.wordBasedSuggestions": false,
+        "editor.suggest.insertMode": "replace",
+        "editor.semanticHighlighting.enabled": true,
+        "editor.tabSize": 2
+    },
+
+    "better-comments.tags": [
+        {
+          "tag": "!",
+          "color": "#FF2D00",
+          "strikethrough": false,
+          "underline": false,
+          "backgroundColor": "transparent",
+          "bold": false,
+          "italic": false
+        },
+        {
+          "tag": "?",
+          "color": "#3498DB",
+          "strikethrough": false,
+          "underline": false,
+          "backgroundColor": "transparent",
+          "bold": false,
+          "italic": false
+        },
+        {
+          "tag": "//",
+          "color": "#474747",
+          "strikethrough": true,
+          "underline": false,
+          "backgroundColor": "transparent",
+          "bold": false,
+          "italic": false
+        },
+        {
+          "tag": "todo",
+          "color": "#FF8C00",
+          "strikethrough": false,
+          "underline": false,
+          "backgroundColor": "transparent",
+          "bold": false,
+          "italic": false
+        },
+        {
+          "tag": "*",
+          "color": "#98C379",
+          "strikethrough": false,
+          "underline": false,
+          "backgroundColor": "transparent",
+          "bold": false,
+          "italic": false
+        }
+      ],
+      "editor.snippetSuggestions": "bottom",
+      "editor.suggest.snippetsPreventQuickSuggestions": false,
+      "python.pythonPath": "/home/mi/anaconda3/bin/python",
 }

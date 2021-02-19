@@ -34,6 +34,7 @@ cmake --build ${BUILD_DIR} --target install || exit 1
 # Package
 cd ${BUILD_DIR}
 make package
+make test CTEST_OUTPUT_ON_FAILURE=TRUE GTEST_COLOR=TRUE
 cd -
 
 export PYTHONPATH=`pwd`/${BUILD_DIR}:$PYTHONPATH

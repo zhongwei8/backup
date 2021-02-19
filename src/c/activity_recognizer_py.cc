@@ -41,7 +41,7 @@ class MIActivityRecognizerPy {
   }
 
  private:
-  MIActivityRecognizer *recognizer_;
+  void *recognizer_;
 };
 
 PYBIND11_MODULE(mi_har_py, m) {

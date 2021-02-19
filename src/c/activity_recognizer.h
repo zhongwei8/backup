@@ -11,14 +11,12 @@
 extern "C" {
 #endif
 
-struct MIActivityRecognizer;
-
 /**
  * @brief  Create an activity recognizer instance.
  * @note
  * @retval MIActivityRecognizer
  */
-MIActivityRecognizer *mi_activity_recognizer_new();
+void *mi_activity_recognizer_new();
 
 /**
  * @brief  Free initialized recognizer instance.
@@ -26,7 +24,7 @@ MIActivityRecognizer *mi_activity_recognizer_new();
  * @param  *recognizer: Activity recognizer instance
  * @retval None
  */
-void mi_activity_recognizer_free(MIActivityRecognizer *recognizer);
+void mi_activity_recognizer_free(void *recognizer);
 
 /**
  * @brief  Initialize an activity recognizer instance.
@@ -37,8 +35,8 @@ void mi_activity_recognizer_free(MIActivityRecognizer *recognizer);
  * @param  vote_len: Results smooth Window length, 15 is recommended
  * @retval None
  */
-void mi_activity_recognizer_init(MIActivityRecognizer *recognizer,
-                                 const float thd, const uint32_t vote_len);
+void mi_activity_recognizer_init(void *recognizer, const float thd,
+                                 const uint32_t vote_len);
 
 /**
  * @brief  Process accelerometer data to recognize current activity.
@@ -51,8 +49,8 @@ void mi_activity_recognizer_init(MIActivityRecognizer *recognizer,
  * @param  acc_z: Accel z axis data
  * @retval 1 when Activity Recognizer updated, 0 otherwise
  */
-int8_t mi_activity_recognizer_process(MIActivityRecognizer *recognizer,
-                                      float acc_x, float acc_y, float acc_z);
+int8_t mi_activity_recognizer_process(void *recognizer, float acc_x,
+                                      float acc_y, float acc_z);
 
 /**
  * @brief  Get **CURRENT** window recognize result
@@ -60,7 +58,7 @@ int8_t mi_activity_recognizer_process(MIActivityRecognizer *recognizer,
  * @param  *recognizer: Activity Recognizer instacne
  * @retval Float array of each activity type's prediction probability
  */
-float *mi_activity_recognizer_get_predicts(MIActivityRecognizer *recognizer);
+float *mi_activity_recognizer_get_predicts(void *recognizer);
 
 /**
  * @brief  Get smoothed activity recognition result
@@ -68,7 +66,7 @@ float *mi_activity_recognizer_get_predicts(MIActivityRecognizer *recognizer);
  * @param  *recognizer: Activity Recognizer instance
  * @retval Current recognized activity type
  */
-int8_t mi_activity_recognizer_get_activity(MIActivityRecognizer *recognizer);
+int8_t mi_activity_recognizer_get_activity(void *recognizer);
 
 /**
  * @brief  Get activity recngnition algorithm's version
