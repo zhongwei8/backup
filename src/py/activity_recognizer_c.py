@@ -1,5 +1,7 @@
-# Copyright (c) Xiaomi, 2020. All rights reserved.
-from __future__ import absolute_import, division, print_function
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @Author: Farmer Li
+# @Date: 2021-02-19
 
 from pathlib import Path
 import sys
@@ -10,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-current_dir = Path(__file__).parent
+current_dir = Path(__file__).parent.resolve()
 depolyment_dir = current_dir / '../../../ai-algorithm-depolyment/'
 if not depolyment_dir.exists():
     print(f'Warnning: ai-algorithm-depolyment not exits: {depolyment_dir}')
@@ -19,34 +21,35 @@ sys.path.append(str(depolyment_dir))
 from utils.base import SensorAlgo
 
 build_dir = current_dir / '../../build_linux-x86_64/'
-if not build_dir.exists():
-    print(f'Build dir not exists: {build_dir}')
-    print('Please run ./scripts/build_x86_64.sh on project root dir')
-    exit(1)
 sys.path.append(str(build_dir))
-# Import from build directory
-import src.c.har_model.har_model as CHarModel
+# Import C interface built with pybind11
+from mi_har_py import MIActivityRecognizerPy
 
 
-class HarModel_C(SensorAlgo):
+class ActivityRecognizerC(SensorAlgo):
     """ Class for counting steps with accelerate data """
-    def __init__(self, num_classes=6):
-        self._har_model = CHarModel.HarModel()
-        self._version = self._har_model.get_version()
-        self._algo_name = 'HarModel_C'
+    def __init__(self, vote_len=15, vote_threshold=0.8, num_classes=6):
+        self._vote_len = vote_len
+        self._vote_threshold = vote_threshold
+        self._model = MIActivityRecognizerPy(vote_threshold, vote_len)
+        self._version = self._model.get_version()
+        self._algo_name = 'ActivityRecognizerC'
 
         self._input_names = [
             'EventTimestamp(ns)', 'AccelX', 'AccelY', 'AccelZ', 'Activity'
         ]
         self._output_names = [
             'EventTimestamp(ns)', 'Activity', 'Prob0', 'Prob1', 'Prob2',
-            'Prob3', 'Prob4', 'Prob5', 'Predict'
+            'Prob3', 'Prob4', 'Prob5', 'Predict', 'PredictActivity'
         ]
 
         self._cur_timestamp = 0
-        self._activity = 0
+        self._cnt = 0  # count points
         self._num_classes = num_classes
+
+        self._model_predict = 0
         self._probs = np.zeros(self._num_classes)
+        self._predcit_activity = 0
         self._res = {}
 
     def is_realtime(self):
@@ -57,9 +60,13 @@ class HarModel_C(SensorAlgo):
 
     def reset(self):
         self._cur_timestamp = 0
-        self._activity = 0
+        self._cnt = 0
+        self._model.init_algo(self._vote_threshold, self._vote_len)
+
+        self._model_predict = 0
         self._probs = np.zeros(self._num_classes)
-        self._har_model.init_algo()
+        self._predcit_activity = 0
+        self._res = {}
 
     def feed_data(self, data_point):
         """ main function processes data and count steps"""
@@ -68,10 +75,12 @@ class HarModel_C(SensorAlgo):
         acc_y = data_point['AccelY']
         acc_z = data_point['AccelZ']
         activity_type = data_point['Activity']
-        updated = self._har_model.process_data(acc_x, acc_y, acc_z)
+
+        updated = self._model.process_data(acc_x, acc_y, acc_z)
         if updated > 0:
-            self._probs = self._har_model.get_probs()
-            self._activity = np.argmax(self._probs)
+            self._probs = self._model.get_probs()
+            self._model_predict = np.argmax(self._probs)
+            self._predcit_activity = self._model.get_type()
             self._res = {
                 'EventTimestamp(ns)': self._cur_timestamp,
                 'Activity': activity_type,
@@ -81,12 +90,16 @@ class HarModel_C(SensorAlgo):
                 'Prob3': self._probs[3],
                 'Prob4': self._probs[4],
                 'Prob5': self._probs[5],
-                'Predict': self._activity
+                'Predict': self._model_predict,
+                'PredictActivity': self._predcit_activity
             }
         return (updated > 0)
 
-    def get_activity(self):
-        return self._argmax
+    def get_model_predict(self):
+        return self._model_predict
+
+    def get_predict_activity(self):
+        return self._predcit_activity
 
     def get_probs(self):
         return self._probs
@@ -94,8 +107,12 @@ class HarModel_C(SensorAlgo):
     def get_result(self):
         return self._res
 
+    def get_model(self):
+        return self._model
+
     def process_file(self, file_path):
         df = pd.read_csv(file_path)
+        acc = df[['AccelX', 'AccelY', 'AccelZ']]
         predicts = {}
         for i, row in df.iterrows():
             update = self.feed_data(row)
@@ -107,31 +124,34 @@ class HarModel_C(SensorAlgo):
                     else:
                         predicts[key].append(result[key])
         result = pd.DataFrame.from_dict(predicts)
-        print(result.head(5))
-        result = result.drop('EventTimestamp(ns)', axis='columns')
-        acc = df[['AccelX', 'AccelY', 'AccelZ']]
-        true_pred = result[['Activity', 'Predict']]
-        prob = result.drop(['Activity', 'Predict'], axis='columns')
-        mpl.use('Qt5Agg')
-        plt.figure()
-        plt.subplot(311)
-        acc.plot(ax=plt.gca())
-        plt.legend()
-        plt.subplot(312)
-        # plt.plot(y_pred, label='y_pred')
-        # plt.plot(y_true, label='y_true')
-        true_pred.plot(ax=plt.gca())
-        plt.subplot(313)
-        prob.plot(ax=plt.gca())
-        plt.legend()
-        plt.show()
+        return acc, result
+
+
+def analysis_result(acc, result):
+    print(result[340:360])
+    result = result.drop('EventTimestamp(ns)', axis='columns')
+    result_columns = ['Activity', 'Predict', 'PredictActivity']
+    true_pred = result[result_columns]
+    prob = result.drop(result_columns, axis='columns')
+    mpl.use('Qt5Agg')
+    plt.figure()
+    plt.subplot(311)
+    acc.plot(ax=plt.gca())
+    plt.legend()
+    plt.subplot(312)
+    true_pred.plot(ax=plt.gca(), style='-o')
+    plt.subplot(313)
+    prob.plot(ax=plt.gca(), style='-o')
+    plt.legend()
+    plt.show()
 
 
 @click.command()
 @click.argument('file-path')
 def main(file_path):
-    model = HarModel_C()
-    model.process_file(file_path)
+    model = ActivityRecognizerC()
+    acc, result = model.process_file(file_path)
+    analysis_result(acc, result)
 
 
 if __name__ == '__main__':

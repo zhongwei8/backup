@@ -11,6 +11,8 @@ extern "C" {
 #endif
 #include <stdint.h>
 
+#define HAR_CLASS_NUM (6)
+
 struct mi_har_model;
 
 /* Creare a new activity detector struct */

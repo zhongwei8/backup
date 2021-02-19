@@ -15,7 +15,7 @@ sys.path.append(depolyment_dir)
 # Import from ai-algorithm-depolyment repo
 from utils.base import SensorAlgo
 
-build_dir = current_dir / '../../build_x86_64/'
+build_dir = current_dir / '../../build_linux-x86_64/'
 if not build_dir.exists():
     print(f'Build dir not exists: {build_dir}')
     print('Please run ./scripts/build_x86_64.sh on project root dir')

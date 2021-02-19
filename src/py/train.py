@@ -18,7 +18,6 @@ from utils.common import (CategoryNames, load_dataset, reshape_data,
 from utils.keras_models import (GHM_Loss, ann_model, cnn_features_model,
                                 cnn_model, cnn_model_base, focal_loss,
                                 lstm_model)
-from utils.torch_models import ActivityCNN
 
 ghm = GHM_Loss(bins=30)
 
@@ -312,28 +311,24 @@ def main():
     args = parse_args()
     seed = 6
     fold_idx = 0
+    print('Loading data...')
+    x_data, y_data = load_dataset(args.dir,
+                                  duration=args.win_len,
+                                  shift=args.shift,
+                                  use_amp=args.use_amp)
+    x_test, y_test = load_dataset(args.test,
+                                  duration=args.win_len,
+                                  shift=args.shift,
+                                  use_amp=args.use_amp)
+
+    print(f'xdata shape: {x_data.shape}')
+    # Change to 2d, (N,C,W) to (N,C,H,W), H=1
+    old_shape = x_data.shape
+    x_data = x_data.reshape(old_shape[0], 1, old_shape[1], old_shape[2])
+    old_shape = x_test.shape
+    x_test = x_test.reshape(old_shape[0], 1, old_shape[1], old_shape[2])
+    print(f'xdata new shape: {x_data.shape}')
     if args.kfold <= 0:
-        print('Loading data...')
-        x_data, y_data = load_dataset(args.dir,
-                                      duration=args.win_len,
-                                      shift=args.shift,
-                                      use_amp=args.use_amp)
-        x_test, y_test = load_dataset(args.test,
-                                      duration=args.win_len,
-                                      shift=args.shift,
-                                      use_amp=args.use_amp)
-
-        print(f'xdata shape: {x_data.shape}')
-        # exit(1)
-        # train_x = np.transpose(train_x, (0, 2, 1))
-        # test_x = np.transpose(test_x, (0, 2, 1))
-        # Change to 2d, (N,C,W) to (N,C,H,W), H=1
-        old_shape = x_data.shape
-        x_data = x_data.reshape(old_shape[0], 1, old_shape[1], old_shape[2])
-        old_shape = x_test.shape
-        x_test = x_test.reshape(old_shape[0], 1, old_shape[1], old_shape[2])
-        print(f'xdata new shape: {x_data.shape}')
-
         x_train, x_val, y_train, y_val = train_test_split(x_data,
                                                           y_data,
                                                           test_size=0.33,
@@ -342,16 +337,6 @@ def main():
                     fold_idx)
         logging.info("accuracy score is:%s" % acc)
     else:
-        print('Loading data...')
-        x_data, y_data = load_dataset(args.dir,
-                                      duration=args.win_len,
-                                      shift=args.shift,
-                                      use_amp=args.use_amp)
-        x_test, y_test = load_dataset(args.test,
-                                      duration=args.win_len,
-                                      shift=args.shift,
-                                      use_amp=args.use_amp)
-
         skf = StratifiedKFold(n_splits=args.kfold,
                               shuffle=args.shuffle,
                               random_state=seed)
@@ -364,7 +349,7 @@ def main():
                         fold_idx)
             cv_scores.append(acc)
             fold_idx += 1
-        logging.info("%.2f%% (+/- %.2f%%)" %
+        logging.info("%.4f%% (+/- %.4f%%)" %
                      (np.mean(cv_scores), np.std(cv_scores)))
 
 

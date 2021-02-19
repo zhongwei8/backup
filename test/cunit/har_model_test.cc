@@ -3,10 +3,9 @@
  * Description: This the har model unit test source file.
  *
  */
-#include "har_model.h"
+#include "har_model/har_model.h"
 
 #include "gtest/gtest.h"
-
 
 TEST(HarModelTest, DemoTest) {
   mi_har_model *inst = mi_har_model_new();

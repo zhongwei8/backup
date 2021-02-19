@@ -1,8 +1,9 @@
 src/c/miot_algo_har_version.c
 tmp/
-build_x86_64/
-build_x86_32/
-build_hexagon/
+build_android-armeabi-v7a/
+build_generic-qdsp/
+build_linux-x86_32/
+build_linux-x86_64/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### C template

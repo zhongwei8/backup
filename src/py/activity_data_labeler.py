@@ -3,21 +3,19 @@
 # @Author : farmer
 # @Date : 2020-11-09
 
-from enum import Enum
-from enum import unique
+from enum import Enum, unique
 import json
 import os
 from pathlib import Path
 
+import PySimpleGUI as sg
 import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import PySimpleGUI as sg
 
-from utils.data_labeler import DataLabeler
-from utils.data_labeler import merge_labels
 from utils import log
+from utils.data_labeler import DataLabeler, merge_labels
 
 logger = log.create_logger('ActiDataLabeler')
 
@@ -120,7 +118,7 @@ def load_label_result(label_file: Path):
 def get_meta_from_file_name(file_name: str,
                             meta_type: MetaType = MetaType.ACTIVITY_TYPE):
     metas = file_name.split('-')
-    if MetaType.ACTIVITY_TYPE == meta_type:
+    if len(metas) >= 8 and MetaType.ACTIVITY_TYPE == meta_type:
         return metas[7].split('_')[1]
     else:
         return ""
