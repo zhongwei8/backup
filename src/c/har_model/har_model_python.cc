@@ -1,8 +1,9 @@
 // Copyright 2020 Xiaomi
-#include <pybind11/stl.h>
 #include <stdlib.h>
+
 #include "har_model.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 class HarModel {
  public:

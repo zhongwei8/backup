@@ -14,8 +14,8 @@ import pandas as pd
 from activity_data_labeler import label_convert_ts2index, load_label_result
 
 ACC_SUFFIX = 'accel-52HZ.csv'
-GYRO_SUFFIX = 'gyroscope-52HZ.csv'
-MAGNET_SUFFIX = 'magnet-50HZ.csv'
+GYRO_SUFFIX = 'gyroscope-100HZ.csv'
+MAGNET_SUFFIX = 'magnet-52HZ.csv'
 PRESSURE_SUFFIX = 'pressure-25HZ.csv'
 LABEL_SUFFIX = 'label-result.csv'
 
@@ -41,7 +41,10 @@ DATASET_TO_USE = [
 
 def get_activity_type_name_by_record_name(record_name: str):
     metas = record_name.split('-')
-    return metas[7].split('_')[1]
+    if len(metas) >= 8:
+        return metas[7].split('_')[1]
+    else:
+        return "Unknown"
 
 
 def align_sensor_data(acc, gyro, mag=None, sample_rate=52):
@@ -73,6 +76,8 @@ def align_sensor_data(acc, gyro, mag=None, sample_rate=52):
         mag_num = len(mag)
         mag_ts = mag[:, 1]
         init_ts = max(gyro_ts[0], mag_ts[0])
+        print(init_ts)
+        print(type(init_ts))
     else:
         mag_num = 0
         mag_ts = None
@@ -148,9 +153,13 @@ def plot_aligned_data(x1, x2, name1='x1', name2='x2'):
 
 
 def align_one_record(record_dir: Path, debug=False):
-    acc_file = record_dir / f'{record_dir.name}-{ACC_SUFFIX}'
-    gyro_file = record_dir / f'{record_dir.name}-{GYRO_SUFFIX}'
-    magnet_file = record_dir / f'{record_dir.name}-{MAGNET_SUFFIX}'
+    file_prefix = record_dir.name.split('-')[0]
+    acc_file = record_dir / f'{file_prefix}-{ACC_SUFFIX}'
+    gyro_file = record_dir / f'{file_prefix}-{GYRO_SUFFIX}'
+    magnet_file = record_dir / f'{file_prefix}-{MAGNET_SUFFIX}'
+    print(acc_file)
+    print(gyro_file)
+    print(magnet_file)
     # print(f'Acc file: {acc_file}')
     # print(f'Gyro file: {gyro_file}')
     # print(f'Magnet file: {magnet_file}')
@@ -166,7 +175,6 @@ def align_one_record(record_dir: Path, debug=False):
         except pd.errors.ParserError as e:
             print(f'Error: {e}')
             return None
-
         aligned = align_sensor_data(acc, gyro, mag)
         if debug:
             plt.figure('Align check: axis x')
@@ -184,6 +192,7 @@ def align_one_record(record_dir: Path, debug=False):
 
         return aligned
     else:
+        print('Raw data file not exists, skipped')
         return None
 
 
@@ -200,7 +209,8 @@ def align_and_relabel_one_record(record_dir: Path,
     #     return
 
     # print(f'\nProcessing record: {record_dir}')
-    label_file = record_dir / f'{record_dir.name}-{LABEL_SUFFIX}'
+    file_prefix = record_dir.name.split('-')[0]
+    label_file = record_dir / f'{file_prefix}-{LABEL_SUFFIX}'
     if not label_file.exists():
         print('Label file not exists, skipped!')
         return None
@@ -273,8 +283,8 @@ def main(data_dir, save_dir):
         save_dir = Path(save_dir)
         align_and_relabel_datasets(Path(data_dir), save_dir, DATASET_TO_USE)
     else:
+        print(f'Aligning record: {data_dir}')
         align_and_relabel_one_record(Path(data_dir), Path('./'))
-        print('Must set save dir by "-s or --save-dir"')
 
 
 if __name__ == "__main__":

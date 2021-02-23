@@ -13,7 +13,6 @@
 
 #define MI_HAR_MODEL_VERSION (1001)
 #define HAR_ACCEL_SAMPLE_RATE (26)
-#define HAR_CLASS_NUM (6)
 #define INPUT_DIMS 4
 #define BUF_LEN (832)  // 8(time) * 26(fs) * 4(channel)
 #define CHANNEL_NUM (4)

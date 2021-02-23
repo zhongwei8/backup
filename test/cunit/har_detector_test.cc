@@ -4,7 +4,7 @@
  *
  */
 #include "gtest/gtest.h"
-#include "har_detector_func.h"
+#include "har_detector/har_detector_func.h"
 
 TEST(HarDetectorTest, Argmax) {
   float   test_data[6] = {0.1, 0.15, 0.3, 0.2, 0.02, 0.23};
